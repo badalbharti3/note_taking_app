@@ -1,0 +1,39 @@
+HELP.md
+.target/
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.git/
+.DS_Store
+Thumbs.db
+
+# Maven
+mvnw
+mvnw.cmd
+
+# Build output
+/target/
+
+# Logs
+*.log
+
+# OS files
+*.swp
+# Maven
+target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Environment / secrets
+.env
+
+# Local configuration
+application-local.properties
+
+# OS files
+.DS_Store
+Thumbs.db

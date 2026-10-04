@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>NoteFlow - Notes</title>
+
+    <link
+            rel="preconnect"
+            href="https://fonts.googleapis.com"
+    >
+
+    <link
+            rel="preconnect"
+            href="https://fonts.gstatic.com"
+            crossorigin
+    >
+
+    <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+    >
+
+    <link
+            rel="stylesheet"
+            href="/css/style.css"
+    >
+
+</head>
+
+<body>
+
+
+<!-- ========================================================= -->
+<!-- AUTH PAGE -->
+<!-- ========================================================= -->
+
+<section
+        id="authPage"
+        class="auth-page"
+>
+
+    <div class="auth-background-orb orb-one"></div>
+    <div class="auth-background-orb orb-two"></div>
+
+    <div class="auth-card glass-card">
+
+        <div class="auth-brand">
+
+            <div class="brand-icon">
+                N
+            </div>
+
+            <div>
+                <h1>NoteFlow</h1>
+                <p>Your personal workspace</p>
+            </div>
+
+        </div>
+
+
+        <div class="auth-tabs">
+
+            <button
+                    id="loginTab"
+                    class="auth-tab active"
+                    type="button"
+            >
+                Login
+            </button>
+
+            <button
+                    id="signupTab"
+                    class="auth-tab"
+                    type="button"
+            >
+                Sign Up
+            </button>
+
+        </div>
+
+
+        <!-- LOGIN -->
+
+        <form
+                id="loginForm"
+                class="auth-form"
+        >
+
+            <div class="auth-heading">
+
+                <h2>Welcome back</h2>
+
+                <p>
+                    Login to continue to your notes.
+                </p>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="loginEmail">
+                    Email
+                </label>
+
+                <input
+                        type="email"
+                        id="loginEmail"
+                        placeholder="you@example.com"
+                        required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="loginPassword">
+                    Password
+                </label>
+
+                <input
+                        type="password"
+                        id="loginPassword"
+                        placeholder="Enter your password"
+                        required
+                >
+
+            </div>
+
+
+            <button
+                    type="submit"
+                    class="primary-button auth-submit"
+            >
+                Login
+            </button>
+
+        </form>
+
+
+        <!-- SIGNUP -->
+
+        <form
+                id="signupForm"
+                class="auth-form hidden"
+        >
+
+            <div class="auth-heading">
+
+                <h2>Create your account</h2>
+
+                <p>
+                    Start organizing your thoughts.
+                </p>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="signupName">
+                    Name
+                </label>
+
+                <input
+                        type="text"
+                        id="signupName"
+                        placeholder="Your name"
+                        maxlength="50"
+                        required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="signupEmail">
+                    Email
+                </label>
+
+                <input
+                        type="email"
+                        id="signupEmail"
+                        placeholder="you@example.com"
+                        required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="signupPassword">
+                    Password
+                </label>
+
+                <input
+                        type="password"
+                        id="signupPassword"
+                        placeholder="Minimum 8 characters"
+                        minlength="8"
+                        required
+                >
+
+            </div>
+
+
+            <button
+                    type="submit"
+                    class="primary-button auth-submit"
+            >
+                Create Account
+            </button>
+
+        </form>
+
+    </div>
+
+</section>
+
+
+<!-- ========================================================= -->
+<!-- DASHBOARD -->
+<!-- ========================================================= -->
+
+<section
+        id="notesDashboard"
+        class="dashboard-page hidden"
+>
+
+    <header class="topbar glass-card">
+
+        <div class="brand">
+
+            <div class="brand-icon">
+                N
+            </div>
+
+            <div>
+
+                <h1>NoteFlow</h1>
+
+                <p>Your notes, organized.</p>
+
+            </div>
+
+        </div>
+
+
+        <div class="topbar-actions">
+
+            <div class="user-info">
+
+                <div
+                        id="userAvatar"
+                        class="user-avatar"
+                >
+                    U
+                </div>
+
+                <div class="user-details">
+
+                    <strong id="userName">
+                        User
+                    </strong>
+
+                    <span id="userEmail">
+                        user@example.com
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- THEME SELECTOR -->
+
+            <div class="theme-selector">
+
+                <button
+                        id="themeButton"
+                        class="theme-button"
+                        type="button"
+                        title="Change theme"
+                >
+                    <span id="themeButtonIcon">
+                        🎨
+                    </span>
+
+                    <span class="theme-button-text">
+                        Theme
+                    </span>
+
+                    <span class="theme-arrow">
+                        ▾
+                    </span>
+
+                </button>
+
+
+                <div
+                        id="themeMenu"
+                        class="theme-menu hidden"
+                >
+
+                    <div class="theme-menu-title">
+                        Choose theme
+                    </div>
+
+
+                    <button
+                            class="theme-option"
+                            data-theme="violet"
+                            type="button"
+                    >
+
+                        <span class="theme-color violet-color"></span>
+
+                        <span>
+                            Violet
+                        </span>
+
+                        <span
+                                class="theme-check"
+                                data-check="violet"
+                        >
+                            ✓
+                        </span>
+
+                    </button>
+
+
+                    <button
+                            class="theme-option"
+                            data-theme="ocean"
+                            type="button"
+                    >
+
+                        <span class="theme-color ocean-color"></span>
+
+                        <span>
+                            Ocean
+                        </span>
+
+                        <span
+                                class="theme-check"
+                                data-check="ocean"
+                        >
+                            ✓
+                        </span>
+
+                    </button>
+
+
+                    <button
+                            class="theme-option"
+                            data-theme="emerald"
+                            type="button"
+                    >
+
+                        <span class="theme-color emerald-color"></span>
+
+                        <span>
+                            Emerald
+                        </span>
+
+                        <span
+                                class="theme-check"
+                                data-check="emerald"
+                        >
+                            ✓
+                        </span>
+
+                    </button>
+
+
+                    <button
+                            class="theme-option"
+                            data-theme="sunset"
+                            type="button"
+                    >
+
+                        <span class="theme-color sunset-color"></span>
+
+                        <span>
+                            Sunset
+                        </span>
+
+                        <span
+                                class="theme-check"
+                                data-check="sunset"
+                        >
+                            ✓
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <button
+                    id="logoutBtn"
+                    class="secondary-button"
+                    type="button"
+            >
+                Logout
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <main class="dashboard-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    Personal workspace
+                </p>
+
+                <h2>
+                    Welcome
+                    <span id="welcomeUserName">
+                        User
+                    </span>,
+                    Here are your notes.
+                </h2>
+
+                <p class="dashboard-description">
+                    Capture ideas, organize thoughts and
+                    keep everything in one place.
+                </p>
+
+            </div>
+
+
+            <button
+                    id="newNoteBtn"
+                    class="primary-button"
+                    type="button"
+            >
+                + New Note
+            </button>
+
+        </div>
+
+
+        <!-- TOOLBAR -->
+
+        <div class="toolbar glass-card">
+
+            <div class="search-box">
+
+                <span class="search-icon">
+                    ⌕
+                </span>
+
+                <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="Search notes..."
+                >
+
+            </div>
+
+
+            <select id="filterSelect">
+
+                <option value="all">
+                    All Notes
+                </option>
+
+                <option value="pinned">
+                    Pinned
+                </option>
+
+                <option value="favorite">
+                    Favorites
+                </option>
+
+            </select>
+
+
+            <select id="sortSelect">
+
+                <option value="createdAt-desc">
+                    Newest
+                </option>
+
+                <option value="createdAt-asc">
+                    Oldest
+                </option>
+
+                <option value="updatedAt-desc">
+                    Recently Updated
+                </option>
+
+                <option value="title-asc">
+                    Title A-Z
+                </option>
+
+                <option value="title-desc">
+                    Title Z-A
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- NOTES -->
+
+        <div
+                id="notesContainer"
+                class="notes-grid"
+        ></div>
+
+
+        <!-- EMPTY STATE -->
+
+        <div
+                id="emptyState"
+                class="empty-state glass-card hidden"
+        >
+
+            <div class="empty-icon">
+                ✎
+            </div>
+
+            <h3 id="emptyTitle">
+                No notes yet
+            </h3>
+
+            <p id="emptyDescription">
+                Create your first note to get started.
+            </p>
+
+            <button
+                    id="emptyCreateBtn"
+                    class="primary-button"
+                    type="button"
+            >
+                Create Note
+            </button>
+
+        </div>
+
+
+        <!-- PAGINATION -->
+
+        <div
+                id="pagination"
+                class="pagination"
+        >
+
+            <button
+                    id="previousPageBtn"
+                    class="secondary-button"
+                    type="button"
+            >
+                ← Previous
+            </button>
+
+            <span id="pageInfo">
+                Page 1
+            </span>
+
+            <button
+                    id="nextPageBtn"
+                    class="secondary-button"
+                    type="button"
+            >
+                Next →
+            </button>
+
+        </div>
+
+    </main>
+
+</section>
+
+
+<!-- ========================================================= -->
+<!-- EDITOR -->
+<!-- ========================================================= -->
+
+<section
+        id="editorPage"
+        class="editor-page hidden"
+>
+
+    <header class="editor-topbar glass-card">
+
+        <button
+                id="backToNotesBtn"
+                class="secondary-button"
+                type="button"
+        >
+            ← Notes
+        </button>
+
+
+        <div class="editor-heading">
+
+            <span id="editorModeLabel">
+                New Note
+            </span>
+
+            <span
+                    id="saveStatus"
+                    class="save-status"
+            >
+                Unsaved
+            </span>
+
+        </div>
+
+
+        <div class="editor-actions">
+
+            <button
+                    id="editorDeleteBtn"
+                    class="danger-button hidden"
+                    type="button"
+            >
+                Delete
+            </button>
+
+            <button
+                    id="editorSaveBtn"
+                    class="primary-button"
+                    type="button"
+            >
+                Save Note
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <main class="editor-layout">
+
+        <section class="editor-main glass-card">
+
+            <input
+                    type="text"
+                    id="noteTitle"
+                    class="note-title-input"
+                    placeholder="Untitled Note"
+                    maxlength="100"
+            >
+
+
+            <div class="editor-toolbar">
+
+                <button
+                        type="button"
+                        data-command="bold"
+                        title="Bold"
+                >
+                    <strong>B</strong>
+                </button>
+
+                <button
+                        type="button"
+                        data-command="italic"
+                        title="Italic"
+                >
+                    <em>I</em>
+                </button>
+
+                <button
+                        type="button"
+                        data-command="underline"
+                        title="Underline"
+                >
+                    <u>U</u>
+                </button>
+
+
+                <select
+                        id="fontSizeSelect"
+                        title="Font Size"
+                >
+
+                    <option value="3">
+                        Normal
+                    </option>
+
+                    <option value="2">
+                        Small
+                    </option>
+
+                    <option value="4">
+                        Large
+                    </option>
+
+                    <option value="5">
+                        Huge
+                    </option>
+
+                </select>
+
+
+                <span class="toolbar-divider"></span>
+
+
+                <button
+                        type="button"
+                        data-command="justifyLeft"
+                >
+                    ≡
+                </button>
+
+                <button
+                        type="button"
+                        data-command="justifyCenter"
+                >
+                    ≡
+                </button>
+
+                <button
+                        type="button"
+                        data-command="justifyRight"
+                >
+                    ≡
+                </button>
+
+
+                <span class="toolbar-divider"></span>
+
+
+                <button
+                        type="button"
+                        data-command="insertOrderedList"
+                >
+                    1.
+                </button>
+
+                <button
+                        type="button"
+                        data-command="insertUnorderedList"
+                >
+                    •
+                </button>
+
+
+                <span class="toolbar-divider"></span>
+
+
+                <button
+                        type="button"
+                        data-command="undo"
+                >
+                    ↶
+                </button>
+
+                <button
+                        type="button"
+                        data-command="redo"
+                >
+                    ↷
+                </button>
+
+            </div>
+
+
+            <div
+                    id="noteContent"
+                    class="note-content-editor"
+                    contenteditable="true"
+                    data-placeholder="Start writing your note..."
+            ></div>
+
+        </section>
+
+
+        <aside class="editor-sidebar">
+
+            <div class="sidebar-card glass-card">
+
+                <h3>Organization</h3>
+
+
+                <div class="form-group">
+
+                    <label for="noteCategory">
+                        Category
+                    </label>
+
+                    <input
+                            type="text"
+                            id="noteCategory"
+                            placeholder="e.g. Work"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="noteTags">
+                        Tags
+                    </label>
+
+                    <input
+                            type="text"
+                            id="noteTags"
+                            placeholder="java, spring, project"
+                    >
+
+                    <small>
+                        Separate tags with commas
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <div class="sidebar-card glass-card">
+
+                <h3>Properties</h3>
+
+
+                <label class="toggle-row">
+
+                    <span>📌 Pinned</span>
+
+                    <input
+                            type="checkbox"
+                            id="notePinned"
+                    >
+
+                </label>
+
+
+                <label class="toggle-row">
+
+                    <span>★ Favorite</span>
+
+                    <input
+                            type="checkbox"
+                            id="noteFavorite"
+                    >
+
+                </label>
+
+
+                <label class="toggle-row">
+
+                    <span>Archive</span>
+
+                    <input
+                            type="checkbox"
+                            id="noteArchived"
+                    >
+
+                </label>
+
+            </div>
+
+
+            <div
+                    id="noteMetadata"
+                    class="sidebar-card glass-card hidden"
+            >
+
+                <h3>Details</h3>
+
+                <div class="metadata-item">
+
+                    <span>Created</span>
+
+                    <strong id="createdAt">
+                        -
+                    </strong>
+
+                </div>
+
+                <div class="metadata-item">
+
+                    <span>Updated</span>
+
+                    <strong id="updatedAt">
+                        -
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </aside>
+
+    </main>
+
+</section>
+
+
+<!-- ========================================================= -->
+<!-- DELETE MODAL -->
+<!-- ========================================================= -->
+
+<div
+        id="deleteModal"
+        class="modal-overlay hidden"
+>
+
+    <div class="modal glass-card">
+
+        <div class="modal-icon">
+            !
+        </div>
+
+        <h3>
+            Delete this note?
+        </h3>
+
+        <p>
+            This action cannot be undone.
+        </p>
+
+        <div class="modal-actions">
+
+            <button
+                    id="cancelDeleteBtn"
+                    class="secondary-button"
+                    type="button"
+            >
+                Cancel
+            </button>
+
+            <button
+                    id="confirmDeleteBtn"
+                    class="danger-button"
+                    type="button"
+            >
+                Delete
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- LOGOUT MODAL -->
+<!-- ========================================================= -->
+
+<div
+        id="logoutModal"
+        class="modal-overlay hidden"
+>
+
+    <div class="modal glass-card">
+
+        <div class="logout-modal-icon">
+            ↪
+        </div>
+
+        <h3>
+            Logout from NoteFlow?
+        </h3>
+
+        <p>
+            Are you sure you want to logout?
+            You can login again anytime.
+        </p>
+
+        <div class="modal-actions">
+
+            <button
+                    id="cancelLogoutBtn"
+                    class="secondary-button"
+                    type="button"
+            >
+                Cancel
+            </button>
+
+            <button
+                    id="confirmLogoutBtn"
+                    class="danger-button"
+                    type="button"
+            >
+                Logout
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- TOAST -->
+<!-- ========================================================= -->
+
+<div
+        id="toast"
+        class="toast"
+></div>
+
+
+<script src="/js/app.js"></script>
+
+</body>
+
+</html>
