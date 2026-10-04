@@ -1,72 +1,89 @@
-// ============================================================
-// NOTEFLOW - FRONTEND APPLICATION
-// ============================================================
-
-// IMPORTANT:
-// Replace this with your deployed Spring Boot backend URL.
-//
-// Example:
-// const API_BASE_URL = "https://noteflow-api.onrender.com";
-//
-// DO NOT put /api at the end.
 const API_BASE_URL = "https://notetakingapp-production-233a.up.railway.app";
 
-const NOTES_API = `${API_BASE_URL}/api/notes`;
-const AUTH_API = `${API_BASE_URL}/api/auth`;
+/* =========================================================
+   STATE
+========================================================= */
 
-// ============================================================
-// STORAGE KEYS
-// ============================================================
+let authToken = localStorage.getItem("authToken");
+let currentUser = JSON.parse(localStorage.getItem("currentUser")) || null;
 
-const TOKEN_KEY = "noteflow_token";
-const USER_KEY = "noteflow_user";
+let notes = [];
+let currentNote = null;
 
-const DEFAULT_THEME = "violet";
+let currentPage = 1;
+let pageSize = 6;
 
-// ============================================================
-// DOM ELEMENTS
-// ============================================================
+let currentFilter = "all";
+let currentSort = "newest";
+let currentSearch = "";
+
+let deleteNoteId = null;
+
+/* =========================================================
+   DOM ELEMENTS
+========================================================= */
 
 const authPage = document.getElementById("authPage");
+
 const notesDashboard = document.getElementById("notesDashboard");
+
 const editorPage = document.getElementById("editorPage");
 
+/* Auth */
+
 const loginTab = document.getElementById("loginTab");
+
 const signupTab = document.getElementById("signupTab");
 
 const loginForm = document.getElementById("loginForm");
+
 const signupForm = document.getElementById("signupForm");
 
-const loginEmail = document.getElementById("loginEmail");
-const loginPassword = document.getElementById("loginPassword");
-
-const signupName = document.getElementById("signupName");
-const signupEmail = document.getElementById("signupEmail");
-const signupPassword = document.getElementById("signupPassword");
+/* User */
 
 const userAvatar = document.getElementById("userAvatar");
+
 const userName = document.getElementById("userName");
+
 const userEmail = document.getElementById("userEmail");
 
 const welcomeUserName = document.getElementById("welcomeUserName");
 
-const logoutButton = document.getElementById("logoutButton");
+/* Dashboard */
 
-const notesGrid = document.getElementById("notesGrid");
+const logoutBtn = document.getElementById("logoutBtn");
+
+const newNoteBtn = document.getElementById("newNoteBtn");
+
+const emptyCreateBtn = document.getElementById("emptyCreateBtn");
 
 const searchInput = document.getElementById("searchInput");
 
-const filterButton = document.getElementById("filterButton");
+const filterSelect = document.getElementById("filterSelect");
 
 const sortSelect = document.getElementById("sortSelect");
 
+const notesContainer = document.getElementById("notesContainer");
+
+const emptyState = document.getElementById("emptyState");
+
 const pagination = document.getElementById("pagination");
 
-const newNoteButton = document.getElementById("newNoteButton");
+const previousPageBtn = document.getElementById("previousPageBtn");
 
-const backToNotesButton = document.getElementById("backToNotesButton");
+const nextPageBtn = document.getElementById("nextPageBtn");
 
-const noteForm = document.getElementById("noteForm");
+/* Editor */
+
+const backToNotesBtn = document.getElementById("backToNotesBtn");
+
+const editorModeLabel = document.getElementById("editorModeLabel");
+
+const saveStatus = document.getElementById("saveStatus");
+
+const editorDeleteBtn = document.getElementById("editorDeleteBtn");
+
+const editorSaveBtn = document.getElementById("editorSaveBtn");
 
 const noteTitle = document.getElementById("noteTitle");
 
@@ -76,67 +93,53 @@ const noteTags = document.getElementById("noteTags");
 
 const noteContent = document.getElementById("noteContent");
 
-const saveNoteButton = document.getElementById("saveNoteButton");
+const notePinned = document.getElementById("notePinned");
 
-const deleteNoteModal = document.getElementById("deleteNoteModal");
+const noteFavorite = document.getElementById("noteFavorite");
 
-const confirmDeleteButton = document.getElementById("confirmDeleteButton");
+const noteArchived = document.getElementById("noteArchived");
 
-const cancelDeleteButton = document.getElementById("cancelDeleteButton");
+const noteMetadata = document.getElementById("noteMetadata");
 
-const logoutModal = document.getElementById("logoutModal");
-
-const confirmLogoutButton = document.getElementById("confirmLogoutButton");
-
-const cancelLogoutButton = document.getElementById("cancelLogoutButton");
-
-const toastContainer = document.getElementById("toastContainer");
+/* Theme */
 
 const themeButton = document.getElementById("themeButton");
 
 const themeMenu = document.getElementById("themeMenu");
 
-const themeOptions = document.querySelectorAll(".theme-option");
+/* Modals */
 
-// ============================================================
-// APPLICATION STATE
-// ============================================================
+const deleteModal = document.getElementById("deleteModal");
 
-let notes = [];
+const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
-let currentPage = 1;
+const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
 
-const NOTES_PER_PAGE = 9;
+const logoutModal = document.getElementById("logoutModal");
 
-let editingNoteId = null;
+const cancelLogoutBtn = document.getElementById("cancelLogoutBtn");
 
-let noteIdToDelete = null;
+const confirmLogoutBtn = document.getElementById("confirmLogoutBtn");
 
-let currentFilter = "all";
+/* Toast */
 
-let currentSort = "newest";
+const toast = document.getElementById("toast");
 
-// ============================================================
-// INITIALIZATION
-// ============================================================
+/* =========================================================
+   INITIALIZATION
+========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
   initializeApplication();
+
+  setupEventListeners();
+
+  initializeTheme();
 });
 
 function initializeApplication() {
-  setupEventListeners();
-
-  const token = getToken();
-
-  const user = getUser();
-
-  if (token && user) {
-    loadUserTheme(user);
-
+  if (authToken && currentUser) {
     showDashboard();
-
-    updateUserInterface(user);
 
     loadNotes();
   } else {
@@ -144,30 +147,30 @@ function initializeApplication() {
   }
 }
 
-// ============================================================
-// EVENT LISTENERS
-// ============================================================
+/* =========================================================
+   EVENT LISTENERS
+========================================================= */
 
 function setupEventListeners() {
-  // -------------------------------
-  // AUTH TABS
-  // -------------------------------
+  /* -----------------------------------------
+       AUTH TABS
+    ----------------------------------------- */
 
   if (loginTab) {
     loginTab.addEventListener("click", () => {
-      showLoginForm();
+      switchAuthTab("login");
     });
   }
 
   if (signupTab) {
     signupTab.addEventListener("click", () => {
-      showSignupForm();
+      switchAuthTab("signup");
     });
   }
 
-  // -------------------------------
-  // AUTH FORMS
-  // -------------------------------
+  /* -----------------------------------------
+       AUTH FORMS
+    ----------------------------------------- */
 
   if (loginForm) {
     loginForm.addEventListener("submit", handleLogin);
@@ -177,65 +180,78 @@ function setupEventListeners() {
     signupForm.addEventListener("submit", handleSignup);
   }
 
-  // -------------------------------
-  // LOGOUT
-  // -------------------------------
+  /* -----------------------------------------
+       LOGOUT
+    ----------------------------------------- */
 
-  if (logoutButton) {
-    logoutButton.addEventListener("click", openLogoutModal);
-  }
-
-  if (confirmLogoutButton) {
-    confirmLogoutButton.addEventListener("click", logout);
-  }
-
-  if (cancelLogoutButton) {
-    cancelLogoutButton.addEventListener("click", closeLogoutModal);
-  }
-
-  // -------------------------------
-  // NEW NOTE
-  // -------------------------------
-
-  if (newNoteButton) {
-    newNoteButton.addEventListener("click", openNewNoteEditor);
-  }
-
-  // -------------------------------
-  // BACK TO NOTES
-  // -------------------------------
-
-  if (backToNotesButton) {
-    backToNotesButton.addEventListener("click", () => {
-      showDashboard();
-
-      loadNotes();
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      openLogoutModal();
     });
   }
 
-  // -------------------------------
-  // NOTE FORM
-  // -------------------------------
-
-  if (noteForm) {
-    noteForm.addEventListener("submit", handleNoteSubmit);
+  if (cancelLogoutBtn) {
+    cancelLogoutBtn.addEventListener("click", () => {
+      closeLogoutModal();
+    });
   }
 
-  // -------------------------------
-  // SEARCH
-  // -------------------------------
+  if (confirmLogoutBtn) {
+    confirmLogoutBtn.addEventListener("click", () => {
+      logout();
+    });
+  }
+
+  /* -----------------------------------------
+       NEW NOTE
+    ----------------------------------------- */
+
+  if (newNoteBtn) {
+    newNoteBtn.addEventListener("click", () => {
+      openNewNoteEditor();
+    });
+  }
+
+  if (emptyCreateBtn) {
+    emptyCreateBtn.addEventListener("click", () => {
+      openNewNoteEditor();
+    });
+  }
+
+  /* -----------------------------------------
+       SEARCH
+    ----------------------------------------- */
 
   if (searchInput) {
-    searchInput.addEventListener("input", () => {
+    searchInput.addEventListener(
+      "input",
+      debounce(() => {
+        currentSearch = searchInput.value.trim().toLowerCase();
+
+        currentPage = 1;
+
+        renderNotes();
+      }, 250),
+    );
+  }
+
+  /* -----------------------------------------
+       FILTER
+    ----------------------------------------- */
+
+  if (filterSelect) {
+    filterSelect.addEventListener("change", () => {
+      currentFilter = filterSelect.value;
+
       currentPage = 1;
 
       renderNotes();
     });
   }
 
-  // -------------------------------
-  // SORT
-  // -------------------------------
+  /* -----------------------------------------
+       SORT
+    ----------------------------------------- */
 
   if (sortSelect) {
     sortSelect.addEventListener("change", () => {
@@ -247,41 +263,75 @@ function setupEventListeners() {
     });
   }
 
-  // -------------------------------
-  // FILTER
-  // -------------------------------
+  /* -----------------------------------------
+       BACK TO NOTES
+    ----------------------------------------- */
 
-  if (filterButton) {
-    filterButton.addEventListener("click", toggleFilter);
+  if (backToNotesBtn) {
+    backToNotesBtn.addEventListener("click", () => {
+      showDashboard();
+
+      loadNotes();
+    });
   }
 
-  // -------------------------------
-  // DELETE MODAL
-  // -------------------------------
+  /* -----------------------------------------
+       SAVE NOTE
+    ----------------------------------------- */
 
-  if (confirmDeleteButton) {
-    confirmDeleteButton.addEventListener("click", confirmDelete);
+  if (editorSaveBtn) {
+    editorSaveBtn.addEventListener("click", handleNoteSubmit);
   }
 
-  if (cancelDeleteButton) {
-    cancelDeleteButton.addEventListener("click", closeDeleteModal);
+  /* -----------------------------------------
+       DELETE FROM EDITOR
+    ----------------------------------------- */
+
+  if (editorDeleteBtn) {
+    editorDeleteBtn.addEventListener("click", () => {
+      if (currentNote && currentNote.id) {
+        openDeleteModal(currentNote.id);
+      }
+    });
   }
 
-  // -------------------------------
-  // THEME
-  // -------------------------------
+  /* -----------------------------------------
+       DELETE MODAL
+    ----------------------------------------- */
+
+  if (cancelDeleteBtn) {
+    cancelDeleteBtn.addEventListener("click", () => {
+      closeDeleteModal();
+    });
+  }
+
+  if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener("click", () => {
+      if (deleteNoteId) {
+        deleteNote(deleteNoteId);
+      }
+    });
+  }
+
+  /* -----------------------------------------
+       THEME
+    ----------------------------------------- */
 
   if (themeButton) {
-    themeButton.addEventListener("click", toggleThemeMenu);
+    themeButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+
+      toggleThemeMenu();
+    });
   }
 
-  themeOptions.forEach((option) => {
+  document.querySelectorAll(".theme-option").forEach((option) => {
     option.addEventListener("click", () => {
       const theme = option.dataset.theme;
 
-      const user = getUser();
-
-      applyTheme(theme, user);
+      if (theme) {
+        applyTheme(theme);
+      }
 
       closeThemeMenu();
     });
@@ -298,36 +348,70 @@ function setupEventListeners() {
     }
   });
 
-  // -------------------------------
-  // KEYBOARD SHORTCUT
-  // -------------------------------
+  /* -----------------------------------------
+       KEYBOARD SHORTCUT
+    ----------------------------------------- */
 
   document.addEventListener("keydown", (event) => {
     if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-      if (editorPage && !editorPage.classList.contains("hidden")) {
-        if (noteForm) {
-          noteForm.requestSubmit();
-        }
+      if (
+        editorPage &&
+        !editorPage.classList.contains("hidden") &&
+        editorSaveBtn
+      ) {
+        event.preventDefault();
+
+        editorSaveBtn.click();
       }
+    }
+
+    if (event.key === "Escape") {
+      closeDeleteModal();
+
+      closeLogoutModal();
+
+      closeThemeMenu();
     }
   });
 }
 
-// ============================================================
-// AUTHENTICATION
-// ============================================================
+/* =========================================================
+   AUTH
+========================================================= */
+
+function switchAuthTab(tab) {
+  if (tab === "login") {
+    loginTab?.classList.add("active");
+
+    signupTab?.classList.remove("active");
+
+    loginForm?.classList.remove("hidden");
+
+    signupForm?.classList.add("hidden");
+  } else {
+    signupTab?.classList.add("active");
+
+    loginTab?.classList.remove("active");
+
+    signupForm?.classList.remove("hidden");
+
+    loginForm?.classList.add("hidden");
+  }
+}
 
 async function handleSignup(event) {
   event.preventDefault();
 
-  const name = signupName.value.trim();
+  const formData = new FormData(signupForm);
 
-  const email = signupEmail.value.trim();
+  const name = formData.get("name")?.trim();
 
-  const password = signupPassword.value;
+  const email = formData.get("email")?.trim();
+
+  const password = formData.get("password");
 
   if (!name || !email || !password) {
-    showToast("Please fill in all fields", "error");
+    showToast("Please fill all fields", "error");
 
     return;
   }
@@ -335,13 +419,8 @@ async function handleSignup(event) {
   try {
     setButtonLoading(signupForm.querySelector('button[type="submit"]'), true);
 
-    const response = await fetch(`${AUTH_API}/signup`, {
+    const response = await apiRequest("/api/auth/signup", {
       method: "POST",
-
-      headers: {
-        "Content-Type": "application/json",
-      },
-
       body: JSON.stringify({
         name,
         email,
@@ -349,25 +428,17 @@ async function handleSignup(event) {
       }),
     });
 
-    const data = await parseResponse(response);
-
-    if (!response.ok) {
-      throw new Error(data.message || "Signup failed");
-    }
-
-    saveAuthentication(data);
+    saveAuthentication(response);
 
     showToast("Account created successfully", "success");
 
+    signupForm.reset();
+
     showDashboard();
 
-    updateUserInterface(getUser());
-
-    loadNotes();
+    await loadNotes();
   } catch (error) {
-    console.error("Signup error:", error);
-
-    showToast(error.message || "Unable to create account", "error");
+    showToast(error.message || "Signup failed", "error");
   } finally {
     setButtonLoading(signupForm.querySelector('button[type="submit"]'), false);
   }
@@ -376,9 +447,11 @@ async function handleSignup(event) {
 async function handleLogin(event) {
   event.preventDefault();
 
-  const email = loginEmail.value.trim();
+  const formData = new FormData(loginForm);
 
-  const password = loginPassword.value;
+  const email = formData.get("email")?.trim();
+
+  const password = formData.get("password");
 
   if (!email || !password) {
     showToast("Please enter email and password", "error");
@@ -389,115 +462,70 @@ async function handleLogin(event) {
   try {
     setButtonLoading(loginForm.querySelector('button[type="submit"]'), true);
 
-    const response = await fetch(`${AUTH_API}/login`, {
+    const response = await apiRequest("/api/auth/login", {
       method: "POST",
-
-      headers: {
-        "Content-Type": "application/json",
-      },
-
       body: JSON.stringify({
         email,
         password,
       }),
     });
 
-    const data = await parseResponse(response);
-
-    if (!response.ok) {
-      throw new Error(data.message || "Invalid email or password");
-    }
-
-    saveAuthentication(data);
+    saveAuthentication(response);
 
     showToast("Login successful", "success");
 
+    loginForm.reset();
+
     showDashboard();
 
-    updateUserInterface(getUser());
-
-    loadNotes();
+    await loadNotes();
   } catch (error) {
-    console.error("Login error:", error);
-
-    showToast(error.message || "Unable to login", "error");
+    showToast(error.message || "Login failed", "error");
   } finally {
     setButtonLoading(loginForm.querySelector('button[type="submit"]'), false);
   }
 }
 
-// ============================================================
-// AUTH STORAGE
-// ============================================================
+function saveAuthentication(response) {
+  authToken = response.token;
 
-function saveAuthentication(data) {
-  localStorage.setItem(TOKEN_KEY, data.token);
+  currentUser = {
+    userId: response.userId,
 
-  const user = {
-    userId: data.userId,
+    name: response.name,
 
-    name: data.name,
-
-    email: data.email,
+    email: response.email,
   };
 
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  localStorage.setItem("authToken", authToken);
 
-  loadUserTheme(user);
+  localStorage.setItem("currentUser", JSON.stringify(currentUser));
 }
 
-function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-function getUser() {
-  const user = localStorage.getItem(USER_KEY);
-
-  if (!user) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(user);
-  } catch {
-    return null;
-  }
-}
-
-function clearAuthentication() {
-  localStorage.removeItem(TOKEN_KEY);
-
-  localStorage.removeItem(USER_KEY);
-}
-
-// ============================================================
-// LOGOUT
-// ============================================================
+/* =========================================================
+   LOGOUT
+========================================================= */
 
 function openLogoutModal() {
-  if (!logoutModal) {
-    logout();
-
-    return;
-  }
-
-  logoutModal.classList.remove("hidden");
+  logoutModal?.classList.remove("hidden");
 }
 
 function closeLogoutModal() {
-  if (logoutModal) {
-    logoutModal.classList.add("hidden");
-  }
+  logoutModal?.classList.add("hidden");
 }
 
 function logout() {
-  clearAuthentication();
+  authToken = null;
+
+  currentUser = null;
 
   notes = [];
 
-  editingNoteId = null;
+  currentNote = null;
 
-  currentPage = 1;
+  localStorage.removeItem("authToken");
+
+  localStorage.removeItem("currentUser");
 
   closeLogoutModal();
 
@@ -506,191 +534,80 @@ function logout() {
   showToast("Logged out successfully", "success");
 }
 
-// ============================================================
-// PAGE NAVIGATION
-// ============================================================
+/* =========================================================
+   PAGE NAVIGATION
+========================================================= */
 
 function showAuthPage() {
-  hideElement(notesDashboard);
+  authPage?.classList.remove("hidden");
 
-  hideElement(editorPage);
+  notesDashboard?.classList.add("hidden");
 
-  showElement(authPage);
+  editorPage?.classList.add("hidden");
 }
 
 function showDashboard() {
-  hideElement(authPage);
+  authPage?.classList.add("hidden");
 
-  hideElement(editorPage);
+  notesDashboard?.classList.remove("hidden");
 
-  showElement(notesDashboard);
+  editorPage?.classList.add("hidden");
+
+  updateUserUI();
 }
 
 function showEditor() {
-  hideElement(authPage);
+  authPage?.classList.add("hidden");
 
-  hideElement(notesDashboard);
+  notesDashboard?.classList.add("hidden");
 
-  showElement(editorPage);
+  editorPage?.classList.remove("hidden");
 }
 
-function hideElement(element) {
-  if (!element) {
-    return;
-  }
-
-  element.classList.add("hidden");
-}
-
-function showElement(element) {
-  if (!element) {
-    return;
-  }
-
-  element.classList.remove("hidden");
-}
-
-// ============================================================
-// AUTH FORM TABS
-// ============================================================
-
-function showLoginForm() {
-  loginTab?.classList.add("active");
-
-  signupTab?.classList.remove("active");
-
-  loginForm?.classList.remove("hidden");
-
-  signupForm?.classList.add("hidden");
-}
-
-function showSignupForm() {
-  signupTab?.classList.add("active");
-
-  loginTab?.classList.remove("active");
-
-  signupForm?.classList.remove("hidden");
-
-  loginForm?.classList.add("hidden");
-}
-
-// ============================================================
-// USER INTERFACE
-// ============================================================
-
-function updateUserInterface(user) {
-  if (!user) {
+function updateUserUI() {
+  if (!currentUser) {
     return;
   }
 
   if (userName) {
-    userName.textContent = user.name;
+    userName.textContent = currentUser.name || "User";
   }
 
   if (userEmail) {
-    userEmail.textContent = user.email;
+    userEmail.textContent = currentUser.email || "";
   }
 
   if (welcomeUserName) {
-    welcomeUserName.textContent = user.name;
+    welcomeUserName.textContent = currentUser.name || "User";
   }
 
   if (userAvatar) {
-    userAvatar.textContent = getInitials(user.name);
+    const name = currentUser.name || "U";
+
+    userAvatar.textContent = name.charAt(0).toUpperCase();
   }
 }
 
-function getInitials(name) {
-  if (!name) {
-    return "U";
-  }
-
-  const parts = name.trim().split(/\s+/);
-
-  if (parts.length === 1) {
-    return parts[0].charAt(0).toUpperCase();
-  }
-
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-}
-
-// ============================================================
-// API REQUEST HELPER
-// ============================================================
-
-async function apiRequest(url, options = {}) {
-  const token = getToken();
-
-  const headers = {
-    ...(options.headers || {}),
-
-    "Content-Type": "application/json",
-  };
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
-
-  if (response.status === 401) {
-    clearAuthentication();
-
-    showAuthPage();
-
-    showToast("Your session has expired. Please login again.", "error");
-
-    throw new Error("Unauthorized");
-  }
-
-  return response;
-}
-
-// ============================================================
-// RESPONSE PARSER
-// ============================================================
-
-async function parseResponse(response) {
-  const text = await response.text();
-
-  if (!text) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    return {
-      message: text,
-    };
-  }
-}
-
-// ============================================================
-// LOAD NOTES
-// ============================================================
+/* =========================================================
+   NOTES API
+========================================================= */
 
 async function loadNotes() {
+  if (!authToken) {
+    return;
+  }
+
   try {
-    const response = await apiRequest(NOTES_API, {
+    const response = await apiRequest("/api/notes", {
       method: "GET",
     });
 
-    const data = await parseResponse(response);
-
-    if (!response.ok) {
-      throw new Error(data.message || "Unable to load notes");
-    }
-
-    if (Array.isArray(data)) {
-      notes = data;
-    } else if (Array.isArray(data.notes)) {
-      notes = data.notes;
-    } else if (Array.isArray(data.content)) {
-      notes = data.content;
+    if (Array.isArray(response)) {
+      notes = response;
+    } else if (response && Array.isArray(response.content)) {
+      notes = response.content;
+    } else if (response && Array.isArray(response.notes)) {
+      notes = response.notes;
     } else {
       notes = [];
     }
@@ -699,300 +616,32 @@ async function loadNotes() {
 
     renderNotes();
   } catch (error) {
-    console.error("Load notes error:", error);
+    console.error("Failed to load notes:", error);
 
-    if (error.message !== "Unauthorized") {
-      showToast(error.message || "Unable to load notes", "error");
-    }
-  }
-}
+    if (error.status === 401 || error.status === 403) {
+      logout();
 
-// ============================================================
-// NEW NOTE
-// ============================================================
-
-function openNewNoteEditor() {
-  editingNoteId = null;
-
-  clearEditor();
-
-  showEditor();
-
-  if (noteTitle) {
-    noteTitle.focus();
-  }
-}
-
-// ============================================================
-// EDIT NOTE
-// ============================================================
-
-function openEditNote(note) {
-  editingNoteId = note.id || note._id;
-
-  if (noteTitle) {
-    noteTitle.value = note.title || "";
-  }
-
-  if (noteCategory) {
-    noteCategory.value = note.category || "";
-  }
-
-  if (noteTags) {
-    noteTags.value = Array.isArray(note.tags)
-      ? note.tags.join(", ")
-      : note.tags || "";
-  }
-
-  if (noteContent) {
-    noteContent.innerHTML = note.content || "";
-  }
-
-  showEditor();
-
-  if (noteTitle) {
-    noteTitle.focus();
-  }
-}
-
-// ============================================================
-// CLEAR EDITOR
-// ============================================================
-
-function clearEditor() {
-  if (noteTitle) {
-    noteTitle.value = "";
-  }
-
-  if (noteCategory) {
-    noteCategory.value = "";
-  }
-
-  if (noteTags) {
-    noteTags.value = "";
-  }
-
-  if (noteContent) {
-    noteContent.innerHTML = "";
-  }
-}
-
-// ============================================================
-// SAVE / UPDATE NOTE
-// ============================================================
-
-async function handleNoteSubmit(event) {
-  event.preventDefault();
-
-  const title = noteTitle?.value.trim() || "";
-
-  const category = noteCategory?.value.trim() || "";
-
-  const content = noteContent?.innerHTML.trim() || "";
-
-  const tags = parseTags(noteTags?.value || "");
-
-  if (!title) {
-    showToast("Please enter a note title", "error");
-
-    return;
-  }
-
-  if (!content) {
-    showToast("Please enter some note content", "error");
-
-    return;
-  }
-
-  const isEditing = Boolean(editingNoteId);
-
-  const payload = {
-    title,
-
-    category,
-
-    tags,
-
-    content,
-  };
-
-  try {
-    setButtonLoading(saveNoteButton, true);
-
-    let response;
-
-    if (isEditing) {
-      response = await apiRequest(`${NOTES_API}/${editingNoteId}`, {
-        method: "PUT",
-
-        body: JSON.stringify(payload),
-      });
-    } else {
-      response = await apiRequest(NOTES_API, {
-        method: "POST",
-
-        body: JSON.stringify(payload),
-      });
+      return;
     }
 
-    const data = await parseResponse(response);
-
-    if (!response.ok) {
-      throw new Error(data.message || "Unable to save note");
-    }
-
-    showToast(
-      isEditing ? "Note updated successfully" : "Note created successfully",
-      "success",
-    );
-
-    editingNoteId = null;
-
-    showDashboard();
-
-    await loadNotes();
-  } catch (error) {
-    console.error("Save note error:", error);
-
-    if (error.message !== "Unauthorized") {
-      showToast(error.message || "Unable to save note", "error");
-    }
-  } finally {
-    setButtonLoading(saveNoteButton, false);
+    showToast(error.message || "Failed to load notes", "error");
   }
 }
 
-// ============================================================
-// DELETE NOTE
-// ============================================================
-
-function openDeleteModal(noteId) {
-  noteIdToDelete = noteId;
-
-  if (deleteNoteModal) {
-    deleteNoteModal.classList.remove("hidden");
-  }
-}
-
-function closeDeleteModal() {
-  noteIdToDelete = null;
-
-  if (deleteNoteModal) {
-    deleteNoteModal.classList.add("hidden");
-  }
-}
-
-async function confirmDelete() {
-  if (!noteIdToDelete) {
-    return;
-  }
-
-  try {
-    const response = await apiRequest(`${NOTES_API}/${noteIdToDelete}`, {
-      method: "DELETE",
-    });
-
-    const data = await parseResponse(response);
-
-    if (!response.ok) {
-      throw new Error(data.message || "Unable to delete note");
-    }
-
-    closeDeleteModal();
-
-    showToast("Note deleted successfully", "success");
-
-    await loadNotes();
-  } catch (error) {
-    console.error("Delete note error:", error);
-
-    if (error.message !== "Unauthorized") {
-      showToast(error.message || "Unable to delete note", "error");
-    }
-  }
-}
-
-// ============================================================
-// NOTE ACTIONS
-// ============================================================
-
-async function toggleNoteProperty(note, property, value) {
-  const noteId = note.id || note._id;
-
-  try {
-    const payload = {
-      title: note.title || "",
-
-      category: note.category || "",
-
-      tags: Array.isArray(note.tags) ? note.tags : [],
-
-      content: note.content || "",
-
-      [property]: value,
-    };
-
-    const response = await apiRequest(`${NOTES_API}/${noteId}`, {
-      method: "PUT",
-
-      body: JSON.stringify(payload),
-    });
-
-    const data = await parseResponse(response);
-
-    if (!response.ok) {
-      throw new Error(data.message || "Unable to update note");
-    }
-
-    await loadNotes();
-  } catch (error) {
-    console.error("Update note error:", error);
-
-    showToast(error.message || "Unable to update note", "error");
-  }
-}
-
-// ============================================================
-// RENDER NOTES
-// ============================================================
+/* =========================================================
+   RENDER NOTES
+========================================================= */
 
 function renderNotes() {
-  if (!notesGrid) {
+  if (!notesContainer) {
     return;
   }
 
   let filteredNotes = [...notes];
 
-  // -------------------------------
-  // SEARCH
-  // -------------------------------
-
-  const searchTerm = searchInput?.value.trim().toLowerCase() || "";
-
-  if (searchTerm) {
-    filteredNotes = filteredNotes.filter((note) => {
-      const title = note.title || "";
-
-      const content = stripHtml(note.content || "");
-
-      const category = note.category || "";
-
-      const tags = Array.isArray(note.tags)
-        ? note.tags.join(" ")
-        : note.tags || "";
-
-      return (
-        title.toLowerCase().includes(searchTerm) ||
-        content.toLowerCase().includes(searchTerm) ||
-        category.toLowerCase().includes(searchTerm) ||
-        tags.toLowerCase().includes(searchTerm)
-      );
-    });
-  }
-
-  // -------------------------------
-  // FILTER
-  // -------------------------------
+  /* -----------------------------------------
+       FILTER
+    ----------------------------------------- */
 
   if (currentFilter === "pinned") {
     filteredNotes = filteredNotes.filter((note) => note.pinned === true);
@@ -1010,68 +659,34 @@ function renderNotes() {
     filteredNotes = filteredNotes.filter((note) => note.archived !== true);
   }
 
-  // -------------------------------
-  // SORT
-  // -------------------------------
+  /* -----------------------------------------
+       SEARCH
+    ----------------------------------------- */
 
-  filteredNotes = sortNotes(filteredNotes);
+  if (currentSearch) {
+    filteredNotes = filteredNotes.filter((note) => {
+      const title = String(note.title || "").toLowerCase();
 
-  // -------------------------------
-  // PAGINATION
-  // -------------------------------
+      const content = String(note.content || "").toLowerCase();
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredNotes.length / NOTES_PER_PAGE),
-  );
+      const category = String(note.category || "").toLowerCase();
 
-  if (currentPage > totalPages) {
-    currentPage = totalPages;
-  }
+      const tags = String(note.tags || "").toLowerCase();
 
-  const startIndex = (currentPage - 1) * NOTES_PER_PAGE;
-
-  const pageNotes = filteredNotes.slice(
-    startIndex,
-    startIndex + NOTES_PER_PAGE,
-  );
-
-  notesGrid.innerHTML = "";
-
-  if (pageNotes.length === 0) {
-    notesGrid.innerHTML = `
-
-            <div class="empty-state">
-
-                <div class="empty-state-icon">
-                    📝
-                </div>
-
-                <h3>No notes found</h3>
-
-                <p>
-                    Create a new note or
-                    change your search/filter.
-                </p>
-
-            </div>
-
-        `;
-  } else {
-    pageNotes.forEach((note) => {
-      notesGrid.appendChild(createNoteCard(note));
+      return (
+        title.includes(currentSearch) ||
+        content.includes(currentSearch) ||
+        category.includes(currentSearch) ||
+        tags.includes(currentSearch)
+      );
     });
   }
 
-  renderPagination(totalPages);
-}
+  /* -----------------------------------------
+       SORT
+    ----------------------------------------- */
 
-// ============================================================
-// SORT NOTES
-// ============================================================
-
-function sortNotes(noteList) {
-  return noteList.sort((a, b) => {
+  filteredNotes.sort((a, b) => {
     const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
 
     const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
@@ -1081,7 +696,7 @@ function sortNotes(noteList) {
     }
 
     if (currentSort === "title") {
-      return (a.title || "").localeCompare(b.title || "");
+      return String(a.title || "").localeCompare(String(b.title || ""));
     }
 
     if (currentSort === "pinned") {
@@ -1090,374 +705,723 @@ function sortNotes(noteList) {
 
     return dateB - dateA;
   });
-}
 
-// ============================================================
-// NOTE CARD
-// ============================================================
+  /* -----------------------------------------
+       EMPTY
+    ----------------------------------------- */
 
-function createNoteCard(note) {
-  const card = document.createElement("article");
+  if (filteredNotes.length === 0) {
+    notesContainer.innerHTML = "";
 
-  card.className = "note-card";
+    emptyState?.classList.remove("hidden");
 
-  if (note.pinned) {
-    card.classList.add("is-pinned");
+    if (pagination) {
+      pagination.innerHTML = "";
+    }
+
+    return;
   }
 
-  const noteId = note.id || note._id;
+  emptyState?.classList.add("hidden");
 
-  const title = escapeHtml(note.title || "Untitled");
+  /* -----------------------------------------
+       PAGINATION
+    ----------------------------------------- */
 
-  const category = escapeHtml(note.category || "");
+  const totalPages = Math.max(1, Math.ceil(filteredNotes.length / pageSize));
 
-  const content = sanitizePreview(note.content || "");
+  if (currentPage > totalPages) {
+    currentPage = totalPages;
+  }
 
-  const date = formatDate(note.updatedAt || note.createdAt);
+  const start = (currentPage - 1) * pageSize;
 
-  const tags = Array.isArray(note.tags) ? note.tags : [];
+  const end = start + pageSize;
 
-  const tagsHtml = tags.length
-    ? `
-                <div class="note-tags">
-                    ${tags
-                      .map(
-                        (tag) =>
-                          `<span class="tag">
-                                    ${escapeHtml(tag)}
-                                </span>`,
-                      )
-                      .join("")}
+  const pageNotes = filteredNotes.slice(start, end);
+
+  notesContainer.innerHTML = pageNotes
+    .map((note) => createNoteCard(note))
+    .join("");
+
+  setupNoteCardListeners();
+
+  renderPagination(totalPages);
+}
+
+/* =========================================================
+   NOTE CARD
+========================================================= */
+
+function createNoteCard(note) {
+  const id = note.id || note._id || "";
+
+  const title = escapeHtml(note.title || "Untitled Note");
+
+  const content = escapeHtml(stripHtml(note.content || ""));
+
+  const category = escapeHtml(note.category || "General");
+
+  const tags = normalizeTags(note.tags);
+
+  const createdDate = formatDate(note.updatedAt || note.createdAt);
+
+  return `
+        <article
+            class="note-card"
+            data-note-id="${escapeAttribute(id)}"
+        >
+
+            <div class="note-card-header">
+
+                <div class="note-card-category">
+                    ${category}
                 </div>
-            `
-    : "";
 
-  card.innerHTML = `
+                <div class="note-card-actions">
 
-        <div class="note-card-header">
+                    <button
+                        type="button"
+                        class="note-action-btn pin-note-btn ${note.pinned ? "active" : ""}"
+                        data-id="${escapeAttribute(id)}"
+                        title="Pin"
+                    >
+                        ${note.pinned ? "📌" : "📍"}
+                    </button>
 
-            <div class="note-card-title-wrap">
+                    <button
+                        type="button"
+                        class="note-action-btn favorite-note-btn ${note.favorite ? "active" : ""}"
+                        data-id="${escapeAttribute(id)}"
+                        title="Favorite"
+                    >
+                        ${note.favorite ? "★" : "☆"}
+                    </button>
 
-                ${
-                  note.pinned
-                    ? `
-                            <span
-                                class="note-pin"
-                                title="Pinned"
-                            >
-                                📌
-                            </span>
-                        `
-                    : ""
-                }
+                    <button
+                        type="button"
+                        class="note-action-btn delete-note-btn"
+                        data-id="${escapeAttribute(id)}"
+                        title="Delete"
+                    >
+                        🗑
+                    </button>
 
-                <h3>
+                </div>
+
+            </div>
+
+
+            <div
+                class="note-card-body"
+                data-id="${escapeAttribute(id)}"
+            >
+
+                <h3 class="note-card-title">
                     ${title}
                 </h3>
 
-            </div>
-
-            <div class="note-actions">
-
-                <button
-                    class="icon-button"
-                    data-action="pin"
-                    title="Pin"
-                >
-                    ${note.pinned ? "📌" : "📍"}
-                </button>
-
-                <button
-                    class="icon-button"
-                    data-action="favorite"
-                    title="Favorite"
-                >
-                    ${note.favorite ? "★" : "☆"}
-                </button>
-
-                <button
-                    class="icon-button"
-                    data-action="archive"
-                    title="Archive"
-                >
-                    ${note.archived ? "📦" : "🗃️"}
-                </button>
-
-                <button
-                    class="icon-button"
-                    data-action="delete"
-                    title="Delete"
-                >
-                    🗑️
-                </button>
+                <p class="note-card-content">
+                    ${content || "No content"}
+                </p>
 
             </div>
 
-        </div>
+
+            ${
+              tags.length
+                ? `
+                        <div class="note-card-tags">
+
+                            ${tags
+                              .map(
+                                (tag) =>
+                                  `<span class="note-tag">
+                                            ${escapeHtml(tag)}
+                                        </span>`,
+                              )
+                              .join("")}
+
+                        </div>
+                    `
+                : ""
+            }
 
 
-        ${
-          category
-            ? `
-                    <div class="note-category">
-                        ${category}
-                    </div>
-                `
-            : ""
-        }
+            <div class="note-card-footer">
 
+                <span>
+                    ${createdDate}
+                </span>
 
-        <div class="note-preview">
+                ${note.archived ? `<span>Archived</span>` : ""}
 
-            ${content}
+            </div>
 
-        </div>
-
-
-        ${tagsHtml}
-
-
-        <div class="note-card-footer">
-
-            <span>
-                ${date}
-            </span>
-
-            <button
-                class="note-edit-button"
-                data-action="edit"
-            >
-                Open
-            </button>
-
-        </div>
-
+        </article>
     `;
-
-  card.addEventListener("click", (event) => {
-    const actionButton = event.target.closest("[data-action]");
-
-    if (!actionButton) {
-      return;
-    }
-
-    event.stopPropagation();
-
-    const action = actionButton.dataset.action;
-
-    if (action === "edit") {
-      openEditNote(note);
-
-      return;
-    }
-
-    if (action === "delete") {
-      openDeleteModal(noteId);
-
-      return;
-    }
-
-    if (action === "pin") {
-      toggleNoteProperty(note, "pinned", !note.pinned);
-
-      return;
-    }
-
-    if (action === "favorite") {
-      toggleNoteProperty(note, "favorite", !note.favorite);
-
-      return;
-    }
-
-    if (action === "archive") {
-      toggleNoteProperty(note, "archived", !note.archived);
-    }
-  });
-
-  card.addEventListener("dblclick", () => {
-    openEditNote(note);
-  });
-
-  return card;
 }
 
-// ============================================================
-// PAGINATION
-// ============================================================
+/* =========================================================
+   NOTE CARD LISTENERS
+========================================================= */
+
+function setupNoteCardListeners() {
+  document.querySelectorAll(".note-card-body").forEach((element) => {
+    element.addEventListener("click", () => {
+      const id = element.dataset.id;
+
+      openEditNote(id);
+    });
+  });
+
+  document.querySelectorAll(".pin-note-btn").forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      event.stopPropagation();
+
+      const id = button.dataset.id;
+
+      const note = findNoteById(id);
+
+      if (!note) {
+        return;
+      }
+
+      await updateNote(
+        id,
+        {
+          ...note,
+          pinned: !Boolean(note.pinned),
+        },
+        true,
+      );
+    });
+  });
+
+  document.querySelectorAll(".favorite-note-btn").forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      event.stopPropagation();
+
+      const id = button.dataset.id;
+
+      const note = findNoteById(id);
+
+      if (!note) {
+        return;
+      }
+
+      await updateNote(
+        id,
+        {
+          ...note,
+          favorite: !Boolean(note.favorite),
+        },
+        true,
+      );
+    });
+  });
+
+  document.querySelectorAll(".delete-note-btn").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+
+      openDeleteModal(button.dataset.id);
+    });
+  });
+}
+
+/* =========================================================
+   NEW NOTE
+========================================================= */
+
+function openNewNoteEditor() {
+  currentNote = null;
+
+  if (editorModeLabel) {
+    editorModeLabel.textContent = "Create New Note";
+  }
+
+  if (noteTitle) {
+    noteTitle.value = "";
+  }
+
+  if (noteCategory) {
+    noteCategory.value = "";
+  }
+
+  if (noteTags) {
+    noteTags.value = "";
+  }
+
+  if (noteContent) {
+    noteContent.innerHTML = "";
+
+    if (noteContent.tagName === "TEXTAREA" || noteContent.tagName === "INPUT") {
+      noteContent.value = "";
+    }
+  }
+
+  if (notePinned) {
+    notePinned.checked = false;
+  }
+
+  if (noteFavorite) {
+    noteFavorite.checked = false;
+  }
+
+  if (noteArchived) {
+    noteArchived.checked = false;
+  }
+
+  if (noteMetadata) {
+    noteMetadata.textContent = "";
+  }
+
+  if (editorDeleteBtn) {
+    editorDeleteBtn.classList.add("hidden");
+  }
+
+  if (saveStatus) {
+    saveStatus.textContent = "New note";
+  }
+
+  showEditor();
+}
+
+/* =========================================================
+   EDIT NOTE
+========================================================= */
+
+function openEditNote(id) {
+  const note = findNoteById(id);
+
+  if (!note) {
+    showToast("Note not found", "error");
+
+    return;
+  }
+
+  currentNote = note;
+
+  if (editorModeLabel) {
+    editorModeLabel.textContent = "Edit Note";
+  }
+
+  if (noteTitle) {
+    noteTitle.value = note.title || "";
+  }
+
+  if (noteCategory) {
+    noteCategory.value = note.category || "";
+  }
+
+  if (noteTags) {
+    noteTags.value = normalizeTags(note.tags).join(", ");
+  }
+
+  if (noteContent) {
+    if (noteContent.tagName === "TEXTAREA" || noteContent.tagName === "INPUT") {
+      noteContent.value = note.content || "";
+    } else {
+      noteContent.innerHTML = note.content || "";
+    }
+  }
+
+  if (notePinned) {
+    notePinned.checked = Boolean(note.pinned);
+  }
+
+  if (noteFavorite) {
+    noteFavorite.checked = Boolean(note.favorite);
+  }
+
+  if (noteArchived) {
+    noteArchived.checked = Boolean(note.archived);
+  }
+
+  if (noteMetadata) {
+    noteMetadata.textContent = `Created: ${formatDate(note.createdAt)}`;
+  }
+
+  if (editorDeleteBtn) {
+    editorDeleteBtn.classList.remove("hidden");
+  }
+
+  if (saveStatus) {
+    saveStatus.textContent = "Editing note";
+  }
+
+  showEditor();
+}
+
+/* =========================================================
+   SAVE NOTE
+========================================================= */
+
+async function handleNoteSubmit(event) {
+  if (event) {
+    event.preventDefault();
+  }
+
+  const title = noteTitle?.value.trim() || "";
+
+  let content = "";
+
+  if (noteContent) {
+    if (noteContent.tagName === "TEXTAREA" || noteContent.tagName === "INPUT") {
+      content = noteContent.value.trim();
+    } else {
+      content = noteContent.innerHTML.trim();
+    }
+  }
+
+  const category = noteCategory?.value.trim() || "";
+
+  const tags = normalizeTags(noteTags?.value || "");
+
+  const pinned = Boolean(notePinned?.checked);
+
+  const favorite = Boolean(noteFavorite?.checked);
+
+  const archived = Boolean(noteArchived?.checked);
+
+  if (!title) {
+    showToast("Please enter a note title", "error");
+
+    noteTitle?.focus();
+
+    return;
+  }
+
+  if (!content) {
+    showToast("Please enter some note content", "error");
+
+    noteContent?.focus();
+
+    return;
+  }
+
+  const noteData = {
+    title,
+
+    content,
+
+    category,
+
+    tags,
+
+    pinned,
+
+    favorite,
+
+    archived,
+  };
+
+  try {
+    setButtonLoading(editorSaveBtn, true);
+
+    if (currentNote && getNoteId(currentNote)) {
+      await updateNote(getNoteId(currentNote), noteData, false);
+
+      showToast("Note updated successfully", "success");
+    } else {
+      await createNote(noteData);
+
+      showToast("Note created successfully", "success");
+    }
+
+    showDashboard();
+
+    await loadNotes();
+  } catch (error) {
+    showToast(error.message || "Unable to save note", "error");
+  } finally {
+    setButtonLoading(editorSaveBtn, false);
+  }
+}
+
+/* =========================================================
+   CREATE NOTE
+========================================================= */
+
+async function createNote(noteData) {
+  const response = await apiRequest("/api/notes", {
+    method: "POST",
+    body: JSON.stringify(noteData),
+  });
+
+  if (response) {
+    const created = response.note || response;
+
+    if (created) {
+      notes.unshift(created);
+    }
+  }
+
+  return response;
+}
+
+/* =========================================================
+   UPDATE NOTE
+========================================================= */
+
+async function updateNote(id, noteData, refresh) {
+  try {
+    const response = await apiRequest(`/api/notes/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(noteData),
+    });
+
+    const updated = response?.note || response;
+
+    const index = notes.findIndex((note) => getNoteId(note) === String(id));
+
+    if (index !== -1 && updated) {
+      notes[index] = updated;
+    }
+
+    if (refresh) {
+      await loadNotes();
+    }
+
+    return response;
+  } catch (error) {
+    showToast(error.message || "Failed to update note", "error");
+
+    throw error;
+  }
+}
+
+/* =========================================================
+   DELETE NOTE
+========================================================= */
+
+async function deleteNote(id) {
+  try {
+    setButtonLoading(confirmDeleteBtn, true);
+
+    await apiRequest(`/api/notes/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+
+    notes = notes.filter((note) => getNoteId(note) !== String(id));
+
+    closeDeleteModal();
+
+    if (currentNote && getNoteId(currentNote) === String(id)) {
+      currentNote = null;
+
+      showDashboard();
+    }
+
+    renderNotes();
+
+    showToast("Note deleted successfully", "success");
+  } catch (error) {
+    showToast(error.message || "Failed to delete note", "error");
+  } finally {
+    setButtonLoading(confirmDeleteBtn, false);
+  }
+}
+
+/* =========================================================
+   DELETE MODAL
+========================================================= */
+
+function openDeleteModal(id) {
+  deleteNoteId = String(id);
+
+  deleteModal?.classList.remove("hidden");
+}
+
+function closeDeleteModal() {
+  deleteNoteId = null;
+
+  deleteModal?.classList.add("hidden");
+}
+
+/* =========================================================
+   PAGINATION
+========================================================= */
 
 function renderPagination(totalPages) {
   if (!pagination) {
     return;
   }
 
-  pagination.innerHTML = "";
-
   if (totalPages <= 1) {
+    pagination.innerHTML = "";
+
     return;
   }
 
-  const previousButton = document.createElement("button");
+  pagination.innerHTML = `
 
-  previousButton.textContent = "Previous";
+        <button
+            type="button"
+            class="pagination-btn"
+            id="generatedPreviousPageBtn"
+            ${currentPage <= 1 ? "disabled" : ""}
+        >
+            Previous
+        </button>
 
-  previousButton.disabled = currentPage === 1;
+        <span class="pagination-info">
+            Page ${currentPage} of ${totalPages}
+        </span>
 
-  previousButton.addEventListener("click", () => {
-    if (currentPage > 1) {
-      currentPage--;
+        <button
+            type="button"
+            class="pagination-btn"
+            id="generatedNextPageBtn"
+            ${currentPage >= totalPages ? "disabled" : ""}
+        >
+            Next
+        </button>
 
-      renderNotes();
-    }
-  });
+    `;
 
-  pagination.appendChild(previousButton);
+  document
+    .getElementById("generatedPreviousPageBtn")
+    ?.addEventListener("click", () => {
+      if (currentPage > 1) {
+        currentPage--;
 
-  for (let page = 1; page <= totalPages; page++) {
-    const button = document.createElement("button");
-
-    button.textContent = page;
-
-    if (page === currentPage) {
-      button.classList.add("active");
-    }
-
-    button.addEventListener("click", () => {
-      currentPage = page;
-
-      renderNotes();
+        renderNotes();
+      }
     });
 
-    pagination.appendChild(button);
-  }
+  document
+    .getElementById("generatedNextPageBtn")
+    ?.addEventListener("click", () => {
+      if (currentPage < totalPages) {
+        currentPage++;
 
-  const nextButton = document.createElement("button");
-
-  nextButton.textContent = "Next";
-
-  nextButton.disabled = currentPage === totalPages;
-
-  nextButton.addEventListener("click", () => {
-    if (currentPage < totalPages) {
-      currentPage++;
-
-      renderNotes();
-    }
-  });
-
-  pagination.appendChild(nextButton);
-}
-
-// ============================================================
-// FILTER
-// ============================================================
-
-function toggleFilter() {
-  const filters = ["all", "active", "pinned", "favorite", "archived"];
-
-  const currentIndex = filters.indexOf(currentFilter);
-
-  currentFilter = filters[(currentIndex + 1) % filters.length];
-
-  currentPage = 1;
-
-  renderNotes();
-}
-
-// ============================================================
-// THEMES
-// ============================================================
-
-function getThemeStorageKey(user) {
-  if (!user || !user.userId) {
-    return "noteflow_theme_guest";
-  }
-
-  return `noteflow_theme_${user.userId}`;
-}
-
-function applyTheme(theme, user) {
-  const validThemes = ["violet", "ocean", "emerald", "sunset"];
-
-  if (!validThemes.includes(theme)) {
-    theme = DEFAULT_THEME;
-  }
-
-  document.body.classList.remove(
-    "theme-violet",
-    "theme-ocean",
-    "theme-emerald",
-    "theme-sunset",
-  );
-
-  document.body.classList.add(`theme-${theme}`);
-
-  localStorage.setItem(
-    getThemeStorageKey(user),
-
-    theme,
-  );
-
-  updateThemeSelection(theme);
-}
-
-function loadUserTheme(user) {
-  const savedTheme = localStorage.getItem(getThemeStorageKey(user));
-
-  applyTheme(
-    savedTheme || DEFAULT_THEME,
-
-    user,
-  );
-}
-
-function updateThemeSelection(selectedTheme) {
-  themeOptions.forEach((option) => {
-    const check = option.querySelector(".theme-check");
-
-    if (option.dataset.theme === selectedTheme) {
-      option.classList.add("active");
-
-      if (check) {
-        check.textContent = "✓";
+        renderNotes();
       }
-    } else {
-      option.classList.remove("active");
+    });
+}
 
-      if (check) {
-        check.textContent = "";
-      }
-    }
-  });
+/* =========================================================
+   THEME
+========================================================= */
+
+function initializeTheme() {
+  const savedTheme = localStorage.getItem("noteFlowTheme") || "default";
+
+  applyTheme(savedTheme);
 }
 
 function toggleThemeMenu() {
-  if (!themeMenu) {
-    return;
-  }
-
-  themeMenu.classList.toggle("hidden");
+  themeMenu?.classList.toggle("hidden");
 }
 
 function closeThemeMenu() {
-  if (themeMenu) {
-    themeMenu.classList.add("hidden");
+  themeMenu?.classList.add("hidden");
+}
+
+function applyTheme(theme) {
+  document.body.dataset.theme = theme;
+
+  localStorage.setItem("noteFlowTheme", theme);
+
+  document.querySelectorAll(".theme-option").forEach((option) => {
+    option.classList.toggle("active", option.dataset.theme === theme);
+  });
+}
+
+/* =========================================================
+   API REQUEST
+========================================================= */
+
+async function apiRequest(endpoint, options = {}) {
+  const headers = {
+    "Content-Type": "application/json",
+
+    ...(options.headers || {}),
+  };
+
+  if (authToken) {
+    headers.Authorization = `Bearer ${authToken}`;
   }
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  let data = null;
+
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const error = new Error(
+      data?.message || data?.error || `Request failed (${response.status})`,
+    );
+
+    error.status = response.status;
+
+    throw error;
+  }
+
+  return data;
 }
 
-// ============================================================
-// TAGS
-// ============================================================
+/* =========================================================
+   HELPERS
+========================================================= */
 
-function parseTags(value) {
-  return value
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
+function findNoteById(id) {
+  return notes.find((note) => getNoteId(note) === String(id));
 }
 
-// ============================================================
-// DATE FORMAT
-// ============================================================
+function getNoteId(note) {
+  if (!note) {
+    return "";
+  }
+
+  return String(note.id || note._id || "");
+}
+
+function normalizeTags(tags) {
+  if (Array.isArray(tags)) {
+    return tags.map((tag) => String(tag).trim()).filter(Boolean);
+  }
+
+  if (typeof tags === "string") {
+    return tags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function stripHtml(html) {
+  const div = document.createElement("div");
+
+  div.innerHTML = html || "";
+
+  return div.textContent || div.innerText || "";
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value);
+}
 
 function formatDate(dateValue) {
   if (!dateValue) {
@@ -1477,42 +1441,17 @@ function formatDate(dateValue) {
   });
 }
 
-// ============================================================
-// HTML / SECURITY HELPERS
-// ============================================================
+function debounce(callback, delay) {
+  let timeout;
 
-function stripHtml(html) {
-  const temporaryElement = document.createElement("div");
+  return function (...args) {
+    clearTimeout(timeout);
 
-  temporaryElement.innerHTML = html;
-
-  return temporaryElement.textContent || temporaryElement.innerText || "";
+    timeout = setTimeout(() => {
+      callback.apply(this, args);
+    }, delay);
+  };
 }
-
-function sanitizePreview(html) {
-  const text = stripHtml(html);
-
-  const escaped = escapeHtml(text);
-
-  if (escaped.length <= 180) {
-    return escaped;
-  }
-
-  return escaped.substring(0, 180) + "...";
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-// ============================================================
-// BUTTON LOADING
-// ============================================================
 
 function setButtonLoading(button, loading) {
   if (!button) {
@@ -1520,52 +1459,72 @@ function setButtonLoading(button, loading) {
   }
 
   if (loading) {
-    button.dataset.originalText = button.textContent;
+    button.dataset.originalText = button.innerHTML;
 
     button.disabled = true;
 
-    button.textContent = "Please wait...";
+    button.innerHTML = "Please wait...";
   } else {
     button.disabled = false;
 
     if (button.dataset.originalText) {
-      button.textContent = button.dataset.originalText;
+      button.innerHTML = button.dataset.originalText;
     }
   }
 }
 
-// ============================================================
-// TOAST
-// ============================================================
+/* =========================================================
+   TOAST
+========================================================= */
 
-function showToast(message, type = "success") {
-  if (!toastContainer) {
+function showToast(message, type = "info") {
+  if (!toast) {
     alert(message);
 
     return;
   }
 
-  const toast = document.createElement("div");
+  /*
+       Support both:
+       1. #toast as a container
+       2. #toast as a single toast element
+    */
 
-  toast.className = `toast toast-${type}`;
+  const toastElement = document.createElement("div");
 
-  toast.textContent = message;
+  toastElement.className = `toast-message ${type}`;
 
-  toastContainer.appendChild(toast);
+  toastElement.textContent = message;
+
+  toast.appendChild(toastElement);
 
   setTimeout(() => {
-    toast.classList.add("show");
-  }, 10);
-
-  setTimeout(() => {
-    toast.classList.remove("show");
+    toastElement.classList.add("hide");
 
     setTimeout(() => {
-      toast.remove();
+      toastElement.remove();
     }, 300);
   }, 3000);
 }
 
-// ============================================================
-// END
-// ============================================================
+/* =========================================================
+   EXPORT FOR DEBUGGING
+========================================================= */
+
+window.NoteFlow = {
+  loadNotes,
+
+  renderNotes,
+
+  openNewNoteEditor,
+
+  openEditNote,
+
+  createNote,
+
+  updateNote,
+
+  deleteNote,
+
+  logout,
+};
