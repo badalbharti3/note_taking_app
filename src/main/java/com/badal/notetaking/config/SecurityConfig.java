@@ -60,23 +60,32 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
+                        // CORS preflight
                         .requestMatchers(
                                 HttpMethod.OPTIONS,
                                 "/**"
-                        ).permitAll()
+                        )
+                        .permitAll()
 
+                        // Public authentication endpoints
                         .requestMatchers(
-                                "/api/auth/**"
-                        ).permitAll()
+                                HttpMethod.POST,
+                                "/api/auth/signup",
+                                "/api/auth/login"
+                        )
+                        .permitAll()
 
+                        // Static frontend files
                         .requestMatchers(
                                 "/",
                                 "/index.html",
                                 "/css/**",
                                 "/js/**",
                                 "/favicon.ico"
-                        ).permitAll()
+                        )
+                        .permitAll()
 
+                        // Everything else requires JWT
                         .anyRequest()
                         .authenticated()
                 )

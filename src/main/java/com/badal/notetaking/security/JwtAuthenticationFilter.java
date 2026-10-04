@@ -25,6 +25,38 @@ public class JwtAuthenticationFilter
     }
 
     @Override
+    protected boolean shouldNotFilter(
+            HttpServletRequest request) {
+
+        String path =
+                request.getServletPath();
+
+        return path.equals(
+                "/api/auth/signup"
+        )
+                ||
+                path.equals(
+                        "/api/auth/login"
+                )
+                ||
+                path.startsWith(
+                        "/css/"
+                )
+                ||
+                path.startsWith(
+                        "/js/"
+                )
+                ||
+                path.equals(
+                        "/"
+                )
+                ||
+                path.equals(
+                        "/index.html"
+                );
+    }
+
+    @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
@@ -32,51 +64,40 @@ public class JwtAuthenticationFilter
             throws ServletException, IOException {
 
         String authorizationHeader =
-                request.getHeader("Authorization");
+                request.getHeader(
+                        "Authorization"
+                );
 
-        /*
-         * No Authorization header.
-         *
-         * Let Spring Security decide whether
-         * the endpoint is public or protected.
-         */
-        if (authorizationHeader == null ||
-                authorizationHeader.isBlank()) {
+        if (
+                authorizationHeader == null ||
+                !authorizationHeader.startsWith(
+                        "Bearer "
+                )
+        ) {
 
-            filterChain.doFilter(request, response);
-            return;
-        }
+            filterChain.doFilter(
+                    request,
+                    response
+            );
 
-        /*
-         * Authorization header must be:
-         *
-         * Bearer <JWT>
-         */
-        if (!authorizationHeader.startsWith("Bearer ")) {
-
-            filterChain.doFilter(request, response);
             return;
         }
 
         String token =
-                authorizationHeader.substring(7).trim();
-
-        if (token.isBlank()) {
-
-            filterChain.doFilter(request, response);
-            return;
-        }
+                authorizationHeader.substring(7);
 
         try {
 
-            /*
-             * Validate JWT before creating
-             * the Spring Security authentication.
-             */
-            if (jwtService.isTokenValid(token)) {
+            if (
+                    jwtService.isTokenValid(
+                            token
+                    )
+            ) {
 
                 String email =
-                        jwtService.extractEmail(token);
+                        jwtService.extractEmail(
+                                token
+                        );
 
                 UsernamePasswordAuthenticationToken
                         authentication =
@@ -88,18 +109,20 @@ public class JwtAuthenticationFilter
 
                 SecurityContextHolder
                         .getContext()
-                        .setAuthentication(authentication);
+                        .setAuthentication(
+                                authentication
+                        );
             }
 
         } catch (Exception exception) {
 
-            /*
-             * Invalid JWT.
-             */
             SecurityContextHolder
                     .clearContext();
         }
 
-        filterChain.doFilter(request, response);
+        filterChain.doFilter(
+                request,
+                response
+        );
     }
 }
