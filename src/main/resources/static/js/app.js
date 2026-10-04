@@ -754,112 +754,124 @@ function renderNotes() {
 ========================================================= */
 
 function createNoteCard(note) {
-  const id = note.id || note._id || "";
+  const card = document.createElement("article");
 
-  const title = escapeHtml(note.title || "Untitled Note");
+  card.className = "note-card";
 
-  const content = escapeHtml(stripHtml(note.content || ""));
+  if (note.pinned) {
+    card.classList.add("is-pinned");
+  }
 
-  const category = escapeHtml(note.category || "General");
+  const noteId = note.id || note._id;
+  const title = escapeHtml(note.title || "Untitled");
+  const category = escapeHtml(note.category || "");
+  const content = sanitizePreview(note.content || "");
+  const date = formatDate(note.updatedAt || note.createdAt);
+  const tags = Array.isArray(note.tags) ? note.tags : [];
 
-  const tags = normalizeTags(note.tags);
-
-  const createdDate = formatDate(note.updatedAt || note.createdAt);
-
-  return `
-        <article
-            class="note-card"
-            data-note-id="${escapeAttribute(id)}"
-        >
-
-            <div class="note-card-header">
-
-                <div class="note-card-category">
-                    ${category}
-                </div>
-
-                <div class="note-card-actions">
-
-                    <button
-                        type="button"
-                        class="note-action-btn pin-note-btn ${note.pinned ? "active" : ""}"
-                        data-id="${escapeAttribute(id)}"
-                        title="Pin"
-                    >
-                        ${note.pinned ? "📌" : "📍"}
-                    </button>
-
-                    <button
-                        type="button"
-                        class="note-action-btn favorite-note-btn ${note.favorite ? "active" : ""}"
-                        data-id="${escapeAttribute(id)}"
-                        title="Favorite"
-                    >
-                        ${note.favorite ? "★" : "☆"}
-                    </button>
-
-                    <button
-                        type="button"
-                        class="note-action-btn delete-note-btn"
-                        data-id="${escapeAttribute(id)}"
-                        title="Delete"
-                    >
-                        🗑
-                    </button>
-
-                </div>
-
-            </div>
-
-
-            <div
-                class="note-card-body"
-                data-id="${escapeAttribute(id)}"
-            >
-
-                <h3 class="note-card-title">
-                    ${title}
-                </h3>
-
-                <p class="note-card-content">
-                    ${content || "No content"}
-                </p>
-
-            </div>
-
-
-            ${
-              tags.length
-                ? `
-                        <div class="note-card-tags">
-
-                            ${tags
-                              .map(
-                                (tag) =>
-                                  `<span class="note-tag">
-                                            ${escapeHtml(tag)}
-                                        </span>`,
-                              )
-                              .join("")}
-
-                        </div>
-                    `
-                : ""
-            }
-
-
-            <div class="note-card-footer">
-
-                <span>
-                    ${createdDate}
+  const tagsHtml = tags.length
+    ? `
+        <div class="note-tags">
+          ${tags
+            .map(
+              (tag) => `
+                <span class="tag">
+                  ${escapeHtml(tag)}
                 </span>
+              `,
+            )
+            .join("")}
+        </div>
+      `
+    : "";
 
-                ${note.archived ? `<span>Archived</span>` : ""}
+  card.innerHTML = `
+    <div class="note-card-header">
+      <div class="note-card-title-wrap">
+        ${
+          note.pinned
+            ? '<span class="note-pin" title="Pinned">📌</span>'
+            : ""
+        }
+        <h3>${title}</h3>
+      </div>
 
-            </div>
+      <div class="note-actions">
+        <button class="icon-button" data-action="pin" title="Pin" type="button">
+          ${note.pinned ? "📌" : "📍"}
+        </button>
+        <button class="icon-button" data-action="favorite" title="Favorite" type="button">
+          ${note.favorite ? "★" : "☆"}
+        </button>
+        <button class="icon-button" data-action="archive" title="Archive" type="button">
+          ${note.archived ? "📦" : "🗃️"}
+        </button>
+        <button class="icon-button" data-action="delete" title="Delete" type="button">
+          🗑️
+        </button>
+      </div>
+    </div>
 
-        </article>
-    `;
+    <div class="note-card-content" data-note-id="${escapeAttribute(noteId)}">
+      ${category ? `<div class="note-category">${category}</div>` : ""}
+      <div class="note-preview">${content}</div>
+      ${tagsHtml}
+    </div>
+
+    <div class="note-card-footer">
+      <span>${date}</span>
+      ${note.favorite ? '<span class="note-status">★ Favorite</span>' : ""}
+      ${note.archived ? '<span class="note-status">📦 Archived</span>' : ""}
+    </div>
+  `;
+
+  const contentArea = card.querySelector(".note-card-content");
+
+  if (contentArea) {
+    contentArea.addEventListener("click", () => {
+      openEditNote(noteId);
+    });
+  }
+
+  const actionButtons = card.querySelectorAll(".icon-button");
+
+  actionButtons.forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      event.stopPropagation();
+
+      const action = button.dataset.action;
+
+      if (action === "pin") {
+        await updateNote(
+          noteId,
+          { ...note, pinned: !Boolean(note.pinned) },
+          true,
+        );
+      }
+
+      if (action === "favorite") {
+        await updateNote(
+          noteId,
+          { ...note, favorite: !Boolean(note.favorite) },
+          true,
+        );
+      }
+
+      if (action === "archive") {
+        await updateNote(
+          noteId,
+          { ...note, archived: !Boolean(note.archived) },
+          true,
+        );
+      }
+
+      if (action === "delete") {
+        openDeleteModal(noteId);
+      }
+    });
+  });
+
+  return card;
 }
 
 /* =========================================================
@@ -1306,28 +1318,116 @@ function renderPagination(totalPages) {
    THEME
 ========================================================= */
 
-function initializeTheme() {
-  const savedTheme = localStorage.getItem("noteFlowTheme") || "default";
+const DEFAULT_THEME = "violet";
 
-  applyTheme(savedTheme);
+const themeOptions = document.querySelectorAll(".theme-option");
+
+function getThemeStorageKey(user) {
+  if (!user || !user.userId) {
+    return "noteflow_theme_guest";
+  }
+
+  return `noteflow_theme_${user.userId}`;
+}
+
+function applyTheme(theme, user = currentUser) {
+  const validThemes = ["violet", "ocean", "emerald", "sunset"];
+
+  if (!validThemes.includes(theme)) {
+    theme = DEFAULT_THEME;
+  }
+
+  document.body.classList.remove(
+    "theme-violet",
+    "theme-ocean",
+    "theme-emerald",
+    "theme-sunset",
+  );
+
+  document.body.classList.add(`theme-${theme}`);
+
+  localStorage.setItem(getThemeStorageKey(user), theme);
+
+  updateThemeSelection(theme);
+}
+
+function loadUserTheme(user = currentUser) {
+  const savedTheme = localStorage.getItem(getThemeStorageKey(user));
+
+  applyTheme(savedTheme || DEFAULT_THEME, user);
+}
+
+function updateThemeSelection(selectedTheme) {
+  themeOptions.forEach((option) => {
+    const check = option.querySelector(".theme-check");
+
+    if (option.dataset.theme === selectedTheme) {
+      option.classList.add("active");
+
+      if (check) {
+        check.textContent = "✓";
+      }
+    } else {
+      option.classList.remove("active");
+
+      if (check) {
+        check.textContent = "";
+      }
+    }
+  });
 }
 
 function toggleThemeMenu() {
-  themeMenu?.classList.toggle("hidden");
+  if (!themeMenu) {
+    return;
+  }
+
+  themeMenu.classList.toggle("hidden");
 }
 
 function closeThemeMenu() {
-  themeMenu?.classList.add("hidden");
+  if (!themeMenu) {
+    return;
+  }
+
+  themeMenu.classList.add("hidden");
 }
 
-function applyTheme(theme) {
-  document.body.dataset.theme = theme;
-
-  localStorage.setItem("noteFlowTheme", theme);
-
-  document.querySelectorAll(".theme-option").forEach((option) => {
-    option.classList.toggle("active", option.dataset.theme === theme);
+if (themeButton) {
+  themeButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleThemeMenu();
   });
+}
+
+themeOptions.forEach((option) => {
+  option.addEventListener("click", (event) => {
+    event.stopPropagation();
+
+    const selectedTheme = option.dataset.theme;
+
+    if (!selectedTheme) {
+      return;
+    }
+
+    applyTheme(selectedTheme, currentUser);
+    closeThemeMenu();
+  });
+});
+
+document.addEventListener("click", (event) => {
+  if (
+    themeMenu &&
+    themeButton &&
+    !themeMenu.contains(event.target) &&
+    !themeButton.contains(event.target)
+  ) {
+    closeThemeMenu();
+  }
+});
+
+function initializeTheme() {
+  loadUserTheme(currentUser);
 }
 
 /* =========================================================
