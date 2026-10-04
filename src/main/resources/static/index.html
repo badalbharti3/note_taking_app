@@ -42,6 +42,10 @@
 <!-- AUTH PAGE -->
 <!-- ========================================================= -->
 
+<!-- ========================================================= -->
+<!-- AUTH PAGE -->
+<!-- ========================================================= -->
+
 <section
         id="authPage"
         class="auth-page"
@@ -52,6 +56,8 @@
 
     <div class="auth-card glass-card">
 
+        <!-- BRAND -->
+
         <div class="auth-brand">
 
             <div class="brand-icon">
@@ -59,12 +65,17 @@
             </div>
 
             <div>
+
                 <h1>NoteFlow</h1>
+
                 <p>Your personal workspace</p>
+
             </div>
 
         </div>
 
+
+        <!-- AUTH TABS -->
 
         <div class="auth-tabs">
 
@@ -75,6 +86,7 @@
             >
                 Login
             </button>
+
 
             <button
                     id="signupTab"
@@ -87,7 +99,9 @@
         </div>
 
 
-        <!-- LOGIN -->
+        <!-- ================================================= -->
+        <!-- LOGIN FORM -->
+        <!-- ================================================= -->
 
         <form
                 id="loginForm"
@@ -105,6 +119,8 @@
             </div>
 
 
+            <!-- EMAIL -->
+
             <div class="form-group">
 
                 <label for="loginEmail">
@@ -114,12 +130,16 @@
                 <input
                         type="email"
                         id="loginEmail"
+                        name="email"
                         placeholder="you@example.com"
+                        autocomplete="email"
                         required
                 >
 
             </div>
 
+
+            <!-- PASSWORD -->
 
             <div class="form-group">
 
@@ -130,12 +150,16 @@
                 <input
                         type="password"
                         id="loginPassword"
+                        name="password"
                         placeholder="Enter your password"
+                        autocomplete="current-password"
                         required
                 >
 
             </div>
 
+
+            <!-- LOGIN BUTTON -->
 
             <button
                     type="submit"
@@ -147,7 +171,9 @@
         </form>
 
 
-        <!-- SIGNUP -->
+        <!-- ================================================= -->
+        <!-- SIGNUP FORM -->
+        <!-- ================================================= -->
 
         <form
                 id="signupForm"
@@ -165,6 +191,8 @@
             </div>
 
 
+            <!-- NAME -->
+
             <div class="form-group">
 
                 <label for="signupName">
@@ -174,13 +202,17 @@
                 <input
                         type="text"
                         id="signupName"
+                        name="name"
                         placeholder="Your name"
                         maxlength="50"
+                        autocomplete="name"
                         required
                 >
 
             </div>
 
+
+            <!-- EMAIL -->
 
             <div class="form-group">
 
@@ -191,12 +223,16 @@
                 <input
                         type="email"
                         id="signupEmail"
+                        name="email"
                         placeholder="you@example.com"
+                        autocomplete="email"
                         required
                 >
 
             </div>
 
+
+            <!-- PASSWORD -->
 
             <div class="form-group">
 
@@ -207,13 +243,17 @@
                 <input
                         type="password"
                         id="signupPassword"
+                        name="password"
                         placeholder="Minimum 8 characters"
                         minlength="8"
+                        autocomplete="new-password"
                         required
                 >
 
             </div>
 
+
+            <!-- SIGNUP BUTTON -->
 
             <button
                     type="submit"
@@ -227,8 +267,6 @@
     </div>
 
 </section>
-
-
 <!-- ========================================================= -->
 <!-- DASHBOARD -->
 <!-- ========================================================= -->
