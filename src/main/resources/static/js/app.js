@@ -1549,8 +1549,15 @@ function createNoteCard(note) {
                 class="note-edit-button"
                 data-action="edit"
                 type="button"
+              aria-label="Open note"
             >
-                Open
+              <span class="note-edit-text">
+                Open note
+              </span>
+
+              <span class="note-edit-arrow">
+                →
+              </span>
             </button>
 
         </div>
