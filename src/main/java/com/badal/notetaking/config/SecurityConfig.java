@@ -3,15 +3,19 @@ package com.badal.notetaking.config;
 import com.badal.notetaking.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -22,58 +26,31 @@ public class SecurityConfig {
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter) {
 
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.jwtAuthenticationFilter =
+                jwtAuthenticationFilter;
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
+
         return new BCryptPasswordEncoder();
     }
 
     @Bean
-    public AuthenticationEntryPoint authenticationEntryPoint() {
-
-        return (request, response, exception) -> {
-
-            response.setStatus(401);
-            response.setContentType("application/json");
-
-            response.getWriter().write("""
-                    {
-                        "success": false,
-                        "message": "Authentication required",
-                        "status": 401
-                    }
-                    """);
-        };
-    }
-
-    @Bean
-    public AccessDeniedHandler accessDeniedHandler() {
-
-        return (request, response, exception) -> {
-
-            response.setStatus(403);
-            response.setContentType("application/json");
-
-            response.getWriter().write("""
-                    {
-                        "success": false,
-                        "message": "Access denied",
-                        "status": 403
-                    }
-                    """);
-        };
-    }
-
-    @Bean
     public SecurityFilterChain securityFilterChain(
-            HttpSecurity http) throws Exception {
+            HttpSecurity http)
+            throws Exception {
 
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf ->
+                        csrf.disable()
+                )
 
-                .cors(cors -> cors.disable())
+                .cors(cors ->
+                        cors.configurationSource(
+                                corsConfigurationSource()
+                        )
+                )
 
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
@@ -81,16 +58,12 @@ public class SecurityConfig {
                         )
                 )
 
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(
-                                authenticationEntryPoint()
-                        )
-                        .accessDeniedHandler(
-                                accessDeniedHandler()
-                        )
-                )
-
                 .authorizeHttpRequests(auth -> auth
+
+                        .requestMatchers(
+                                HttpMethod.OPTIONS,
+                                "/**"
+                        ).permitAll()
 
                         .requestMatchers(
                                 "/api/auth/**"
@@ -104,11 +77,8 @@ public class SecurityConfig {
                                 "/favicon.ico"
                         ).permitAll()
 
-                        .requestMatchers(
-                                "/api/notes/**"
-                        ).authenticated()
-
-                        .anyRequest().authenticated()
+                        .anyRequest()
+                        .authenticated()
                 )
 
                 .addFilterBefore(
@@ -117,5 +87,47 @@ public class SecurityConfig {
                 );
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+
+        CorsConfiguration configuration =
+                new CorsConfiguration();
+
+        configuration.setAllowedOrigins(
+                List.of(
+                        "https://takenotewithnoteflow.netlify.app"
+                )
+        );
+
+        configuration.setAllowedMethods(
+                List.of(
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "DELETE",
+                        "OPTIONS"
+                )
+        );
+
+        configuration.setAllowedHeaders(
+                List.of(
+                        "Authorization",
+                        "Content-Type"
+                )
+        );
+
+        configuration.setAllowCredentials(false);
+
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration(
+                "/**",
+                configuration
+        );
+
+        return source;
     }
 }

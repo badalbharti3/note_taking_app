@@ -9,7 +9,7 @@
 // const API_BASE_URL = "https://noteflow-api.onrender.com";
 //
 // DO NOT put /api at the end.
-const API_BASE_URL = "https://takenotewithnoteflow.netlify.app/";
+const API_BASE_URL = "https://notetakingapp-production-233a.up.railway.app";
 
 const NOTES_API = `${API_BASE_URL}/api/notes`;
 const AUTH_API = `${API_BASE_URL}/api/auth`;
