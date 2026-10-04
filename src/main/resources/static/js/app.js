@@ -1,95 +1,96 @@
-const NOTES_API = "/api/notes";
-const AUTH_API = "/api/auth";
+// ============================================================
+// NOTEFLOW - FRONTEND APPLICATION
+// ============================================================
+
+// IMPORTANT:
+// Replace this with your deployed Spring Boot backend URL.
+//
+// Example:
+// const API_BASE_URL = "https://noteflow-api.onrender.com";
+//
+// DO NOT put /api at the end.
+const API_BASE_URL = "https://takenotewithnoteflow.netlify.app/";
+
+const NOTES_API = `${API_BASE_URL}/api/notes`;
+const AUTH_API = `${API_BASE_URL}/api/auth`;
+
+// ============================================================
+// STORAGE KEYS
+// ============================================================
 
 const TOKEN_KEY = "noteflow_token";
 const USER_KEY = "noteflow_user";
 
 const DEFAULT_THEME = "violet";
 
-/* ============================================================
-   STATE
-   ============================================================ */
-
-let currentPage = 0;
-let currentSize = 10;
-
-let currentSortBy = "createdAt";
-let currentDirection = "desc";
-
-let currentFilter = "all";
-let currentKeyword = "";
-
-let totalPages = 0;
-
-let editingNoteId = null;
-let deletingNoteId = null;
-
-let searchTimeout = null;
-let toastTimeout = null;
-
-/* ============================================================
-   DOM ELEMENTS
-   ============================================================ */
-
-/* AUTH */
+// ============================================================
+// DOM ELEMENTS
+// ============================================================
 
 const authPage = document.getElementById("authPage");
+const notesDashboard = document.getElementById("notesDashboard");
+const editorPage = document.getElementById("editorPage");
 
 const loginTab = document.getElementById("loginTab");
-
 const signupTab = document.getElementById("signupTab");
 
 const loginForm = document.getElementById("loginForm");
-
 const signupForm = document.getElementById("signupForm");
 
-/* DASHBOARD */
+const loginEmail = document.getElementById("loginEmail");
+const loginPassword = document.getElementById("loginPassword");
 
-const notesDashboard = document.getElementById("notesDashboard");
-
-const logoutBtn = document.getElementById("logoutBtn");
-
-const cancelLogoutBtn = document.getElementById("cancelLogoutBtn");
-
-const confirmLogoutBtn = document.getElementById("confirmLogoutBtn");
-
-const logoutModal = document.getElementById("logoutModal");
-
-const userName = document.getElementById("userName");
-
-const userEmail = document.getElementById("userEmail");
+const signupName = document.getElementById("signupName");
+const signupEmail = document.getElementById("signupEmail");
+const signupPassword = document.getElementById("signupPassword");
 
 const userAvatar = document.getElementById("userAvatar");
+const userName = document.getElementById("userName");
+const userEmail = document.getElementById("userEmail");
 
 const welcomeUserName = document.getElementById("welcomeUserName");
 
-const newNoteBtn = document.getElementById("newNoteBtn");
+const logoutButton = document.getElementById("logoutButton");
 
-const emptyCreateBtn = document.getElementById("emptyCreateBtn");
+const notesGrid = document.getElementById("notesGrid");
 
 const searchInput = document.getElementById("searchInput");
 
-const filterSelect = document.getElementById("filterSelect");
+const filterButton = document.getElementById("filterButton");
 
 const sortSelect = document.getElementById("sortSelect");
 
-const notesContainer = document.getElementById("notesContainer");
-
-const emptyState = document.getElementById("emptyState");
-
-const emptyTitle = document.getElementById("emptyTitle");
-
-const emptyDescription = document.getElementById("emptyDescription");
-
 const pagination = document.getElementById("pagination");
 
-const previousPageBtn = document.getElementById("previousPageBtn");
+const newNoteButton = document.getElementById("newNoteButton");
 
-const nextPageBtn = document.getElementById("nextPageBtn");
+const backToNotesButton = document.getElementById("backToNotesButton");
 
-const pageInfo = document.getElementById("pageInfo");
+const noteForm = document.getElementById("noteForm");
 
-/* THEME */
+const noteTitle = document.getElementById("noteTitle");
+
+const noteCategory = document.getElementById("noteCategory");
+
+const noteTags = document.getElementById("noteTags");
+
+const noteContent = document.getElementById("noteContent");
+
+const saveNoteButton = document.getElementById("saveNoteButton");
+
+const deleteNoteModal = document.getElementById("deleteNoteModal");
+
+const confirmDeleteButton = document.getElementById("confirmDeleteButton");
+
+const cancelDeleteButton = document.getElementById("cancelDeleteButton");
+
+const logoutModal = document.getElementById("logoutModal");
+
+const confirmLogoutButton = document.getElementById("confirmLogoutButton");
+
+const cancelLogoutButton = document.getElementById("cancelLogoutButton");
+
+const toastContainer = document.getElementById("toastContainer");
 
 const themeButton = document.getElementById("themeButton");
 
@@ -97,265 +98,242 @@ const themeMenu = document.getElementById("themeMenu");
 
 const themeOptions = document.querySelectorAll(".theme-option");
 
-/* EDITOR */
+// ============================================================
+// APPLICATION STATE
+// ============================================================
 
-const editorPage = document.getElementById("editorPage");
+let notes = [];
 
-const backToNotesBtn = document.getElementById("backToNotesBtn");
+let currentPage = 1;
 
-const editorModeLabel = document.getElementById("editorModeLabel");
+const NOTES_PER_PAGE = 9;
 
-const saveStatus = document.getElementById("saveStatus");
+let editingNoteId = null;
 
-const editorSaveBtn = document.getElementById("editorSaveBtn");
+let noteIdToDelete = null;
 
-const editorDeleteBtn = document.getElementById("editorDeleteBtn");
+let currentFilter = "all";
 
-const noteTitle = document.getElementById("noteTitle");
+let currentSort = "newest";
 
-const noteContent = document.getElementById("noteContent");
+// ============================================================
+// INITIALIZATION
+// ============================================================
 
-const fontSizeSelect = document.getElementById("fontSizeSelect");
+document.addEventListener("DOMContentLoaded", () => {
+  initializeApplication();
+});
 
-const noteCategory = document.getElementById("noteCategory");
+function initializeApplication() {
+  setupEventListeners();
 
-const noteTags = document.getElementById("noteTags");
-
-const notePinned = document.getElementById("notePinned");
-
-const noteFavorite = document.getElementById("noteFavorite");
-
-const noteArchived = document.getElementById("noteArchived");
-
-const noteMetadata = document.getElementById("noteMetadata");
-
-const createdAt = document.getElementById("createdAt");
-
-const updatedAt = document.getElementById("updatedAt");
-
-/* MODALS */
-
-const deleteModal = document.getElementById("deleteModal");
-
-const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
-
-const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
-
-/* TOAST */
-
-const toast = document.getElementById("toast");
-
-/* ============================================================
-   INITIALIZATION
-   ============================================================ */
-
-document.addEventListener("DOMContentLoaded", initializeApp);
-
-function initializeApp() {
-  setupAuthEvents();
-
-  setupDashboardEvents();
-
-  setupEditorEvents();
-
-  setupFormattingEvents();
-
-  setupThemeEvents();
-
-  checkAuthentication();
-}
-
-/* ============================================================
-   AUTHENTICATION
-   ============================================================ */
-
-function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-function getStoredUser() {
-  const user = localStorage.getItem(USER_KEY);
-
-  if (!user) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(user);
-  } catch (error) {
-    return null;
-  }
-}
-
-function saveAuthentication(authResponse) {
-  localStorage.setItem(TOKEN_KEY, authResponse.token);
-
-  const user = {
-    userId: authResponse.userId,
-
-    name: authResponse.name,
-
-    email: authResponse.email,
-  };
-
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
-}
-
-function clearAuthentication() {
-  localStorage.removeItem(TOKEN_KEY);
-
-  localStorage.removeItem(USER_KEY);
-}
-
-function checkAuthentication() {
   const token = getToken();
 
-  const user = getStoredUser();
+  const user = getUser();
 
   if (token && user) {
-    showDashboard(user);
+    loadUserTheme(user);
+
+    showDashboard();
+
+    updateUserInterface(user);
+
+    loadNotes();
   } else {
     showAuthPage();
   }
 }
 
-/* ============================================================
-   API FETCH
-   ============================================================ */
+// ============================================================
+// EVENT LISTENERS
+// ============================================================
 
-async function apiFetch(url, options = {}) {
-  const token = getToken();
+function setupEventListeners() {
+  // -------------------------------
+  // AUTH TABS
+  // -------------------------------
 
-  const headers = {
-    ...(options.headers || {}),
-  };
-
-  if (options.body && !headers["Content-Type"]) {
-    headers["Content-Type"] = "application/json";
+  if (loginTab) {
+    loginTab.addEventListener("click", () => {
+      showLoginForm();
+    });
   }
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  if (signupTab) {
+    signupTab.addEventListener("click", () => {
+      showSignupForm();
+    });
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
+  // -------------------------------
+  // AUTH FORMS
+  // -------------------------------
+
+  if (loginForm) {
+    loginForm.addEventListener("submit", handleLogin);
+  }
+
+  if (signupForm) {
+    signupForm.addEventListener("submit", handleSignup);
+  }
+
+  // -------------------------------
+  // LOGOUT
+  // -------------------------------
+
+  if (logoutButton) {
+    logoutButton.addEventListener("click", openLogoutModal);
+  }
+
+  if (confirmLogoutButton) {
+    confirmLogoutButton.addEventListener("click", logout);
+  }
+
+  if (cancelLogoutButton) {
+    cancelLogoutButton.addEventListener("click", closeLogoutModal);
+  }
+
+  // -------------------------------
+  // NEW NOTE
+  // -------------------------------
+
+  if (newNoteButton) {
+    newNoteButton.addEventListener("click", openNewNoteEditor);
+  }
+
+  // -------------------------------
+  // BACK TO NOTES
+  // -------------------------------
+
+  if (backToNotesButton) {
+    backToNotesButton.addEventListener("click", () => {
+      showDashboard();
+
+      loadNotes();
+    });
+  }
+
+  // -------------------------------
+  // NOTE FORM
+  // -------------------------------
+
+  if (noteForm) {
+    noteForm.addEventListener("submit", handleNoteSubmit);
+  }
+
+  // -------------------------------
+  // SEARCH
+  // -------------------------------
+
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      currentPage = 1;
+
+      renderNotes();
+    });
+  }
+
+  // -------------------------------
+  // SORT
+  // -------------------------------
+
+  if (sortSelect) {
+    sortSelect.addEventListener("change", () => {
+      currentSort = sortSelect.value;
+
+      currentPage = 1;
+
+      renderNotes();
+    });
+  }
+
+  // -------------------------------
+  // FILTER
+  // -------------------------------
+
+  if (filterButton) {
+    filterButton.addEventListener("click", toggleFilter);
+  }
+
+  // -------------------------------
+  // DELETE MODAL
+  // -------------------------------
+
+  if (confirmDeleteButton) {
+    confirmDeleteButton.addEventListener("click", confirmDelete);
+  }
+
+  if (cancelDeleteButton) {
+    cancelDeleteButton.addEventListener("click", closeDeleteModal);
+  }
+
+  // -------------------------------
+  // THEME
+  // -------------------------------
+
+  if (themeButton) {
+    themeButton.addEventListener("click", toggleThemeMenu);
+  }
+
+  themeOptions.forEach((option) => {
+    option.addEventListener("click", () => {
+      const theme = option.dataset.theme;
+
+      const user = getUser();
+
+      applyTheme(theme, user);
+
+      closeThemeMenu();
+    });
   });
 
-  if (response.status === 401) {
-    clearAuthentication();
+  document.addEventListener("click", (event) => {
+    if (
+      themeMenu &&
+      themeButton &&
+      !themeMenu.contains(event.target) &&
+      !themeButton.contains(event.target)
+    ) {
+      closeThemeMenu();
+    }
+  });
 
-    showAuthPage();
-
-    showToast("Session expired. Please login again.", "error");
-
-    throw new Error("Authentication required");
-  }
-
-  return response;
-}
-
-/* ============================================================
-   AUTH EVENTS
-   ============================================================ */
-
-function setupAuthEvents() {
-  loginTab.addEventListener("click", showLoginForm);
-
-  signupTab.addEventListener("click", showSignupForm);
-
-  loginForm.addEventListener("submit", handleLogin);
-
-  signupForm.addEventListener("submit", handleSignup);
-
-  logoutBtn.addEventListener("click", openLogoutModal);
-
-  cancelLogoutBtn.addEventListener("click", closeLogoutModal);
-
-  confirmLogoutBtn.addEventListener("click", handleLogout);
+  // -------------------------------
+  // KEYBOARD SHORTCUT
+  // -------------------------------
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !logoutModal.classList.contains("hidden")) {
-      closeLogoutModal();
-    }
-
-    if (event.key === "Escape" && !deleteModal.classList.contains("hidden")) {
-      closeDeleteModal();
+    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+      if (editorPage && !editorPage.classList.contains("hidden")) {
+        if (noteForm) {
+          noteForm.requestSubmit();
+        }
+      }
     }
   });
 }
 
-/* ============================================================
-   LOGIN
-   ============================================================ */
-
-async function handleLogin(event) {
-  event.preventDefault();
-
-  const email = document.getElementById("loginEmail").value.trim();
-
-  const password = document.getElementById("loginPassword").value;
-
-  try {
-    setAuthButtonLoading(loginForm, true);
-
-    const response = await fetch(`${AUTH_API}/login`, {
-      method: "POST",
-
-      headers: {
-        "Content-Type": "application/json",
-      },
-
-      body: JSON.stringify({
-        email,
-        password,
-      }),
-    });
-
-    const data = await parseResponse(response);
-
-    if (!response.ok) {
-      throw new Error(getErrorMessage(data));
-    }
-
-    saveAuthentication(data);
-
-    loginForm.reset();
-
-    const user = {
-      userId: data.userId,
-
-      name: data.name,
-
-      email: data.email,
-    };
-
-    showDashboard(user);
-
-    showToast(`Welcome back, ${data.name}!`, "success");
-  } catch (error) {
-    showToast(error.message || "Login failed", "error");
-  } finally {
-    setAuthButtonLoading(loginForm, false);
-  }
-}
-
-/* ============================================================
-   SIGNUP
-   ============================================================ */
+// ============================================================
+// AUTHENTICATION
+// ============================================================
 
 async function handleSignup(event) {
   event.preventDefault();
 
-  const name = document.getElementById("signupName").value.trim();
+  const name = signupName.value.trim();
 
-  const email = document.getElementById("signupEmail").value.trim();
+  const email = signupEmail.value.trim();
 
-  const password = document.getElementById("signupPassword").value;
+  const password = signupPassword.value;
+
+  if (!name || !email || !password) {
+    showToast("Please fill in all fields", "error");
+
+    return;
+  }
 
   try {
-    setAuthButtonLoading(signupForm, true);
+    setButtonLoading(signupForm.querySelector('button[type="submit"]'), true);
 
     const response = await fetch(`${AUTH_API}/signup`, {
       method: "POST",
@@ -374,155 +352,1020 @@ async function handleSignup(event) {
     const data = await parseResponse(response);
 
     if (!response.ok) {
-      throw new Error(getErrorMessage(data));
+      throw new Error(data.message || "Signup failed");
     }
 
     saveAuthentication(data);
 
-    signupForm.reset();
+    showToast("Account created successfully", "success");
 
-    const user = {
-      userId: data.userId,
+    showDashboard();
 
-      name: data.name,
+    updateUserInterface(getUser());
 
-      email: data.email,
-    };
-
-    showDashboard(user);
-
-    showToast(`Welcome to NoteFlow, ${data.name}!`, "success");
+    loadNotes();
   } catch (error) {
-    showToast(error.message || "Signup failed", "error");
+    console.error("Signup error:", error);
+
+    showToast(error.message || "Unable to create account", "error");
   } finally {
-    setAuthButtonLoading(signupForm, false);
+    setButtonLoading(signupForm.querySelector('button[type="submit"]'), false);
   }
 }
 
-/* ============================================================
-   LOGOUT
-   ============================================================ */
+async function handleLogin(event) {
+  event.preventDefault();
+
+  const email = loginEmail.value.trim();
+
+  const password = loginPassword.value;
+
+  if (!email || !password) {
+    showToast("Please enter email and password", "error");
+
+    return;
+  }
+
+  try {
+    setButtonLoading(loginForm.querySelector('button[type="submit"]'), true);
+
+    const response = await fetch(`${AUTH_API}/login`, {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+      },
+
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
+
+    const data = await parseResponse(response);
+
+    if (!response.ok) {
+      throw new Error(data.message || "Invalid email or password");
+    }
+
+    saveAuthentication(data);
+
+    showToast("Login successful", "success");
+
+    showDashboard();
+
+    updateUserInterface(getUser());
+
+    loadNotes();
+  } catch (error) {
+    console.error("Login error:", error);
+
+    showToast(error.message || "Unable to login", "error");
+  } finally {
+    setButtonLoading(loginForm.querySelector('button[type="submit"]'), false);
+  }
+}
+
+// ============================================================
+// AUTH STORAGE
+// ============================================================
+
+function saveAuthentication(data) {
+  localStorage.setItem(TOKEN_KEY, data.token);
+
+  const user = {
+    userId: data.userId,
+
+    name: data.name,
+
+    email: data.email,
+  };
+
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+
+  loadUserTheme(user);
+}
+
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+function getUser() {
+  const user = localStorage.getItem(USER_KEY);
+
+  if (!user) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(user);
+  } catch {
+    return null;
+  }
+}
+
+function clearAuthentication() {
+  localStorage.removeItem(TOKEN_KEY);
+
+  localStorage.removeItem(USER_KEY);
+}
+
+// ============================================================
+// LOGOUT
+// ============================================================
 
 function openLogoutModal() {
+  if (!logoutModal) {
+    logout();
+
+    return;
+  }
+
   logoutModal.classList.remove("hidden");
 }
 
 function closeLogoutModal() {
-  logoutModal.classList.add("hidden");
+  if (logoutModal) {
+    logoutModal.classList.add("hidden");
+  }
 }
 
-function handleLogout() {
-  closeLogoutModal();
-
+function logout() {
   clearAuthentication();
 
-  resetApplicationState();
+  notes = [];
+
+  editingNoteId = null;
+
+  currentPage = 1;
+
+  closeLogoutModal();
 
   showAuthPage();
 
-  showToast("You have been logged out", "success");
+  showToast("Logged out successfully", "success");
 }
 
-/* ============================================================
-   SHOW / HIDE PAGES
-   ============================================================ */
+// ============================================================
+// PAGE NAVIGATION
+// ============================================================
 
 function showAuthPage() {
-  authPage.classList.remove("hidden");
+  hideElement(notesDashboard);
 
-  notesDashboard.classList.add("hidden");
+  hideElement(editorPage);
 
-  editorPage.classList.add("hidden");
-
-  document.body.classList.remove(
-    "theme-violet",
-    "theme-ocean",
-    "theme-emerald",
-    "theme-sunset",
-  );
-
-  document.body.classList.add("theme-violet");
-
-  showLoginForm();
+  showElement(authPage);
 }
 
-function showDashboard(user) {
-  authPage.classList.add("hidden");
+function showDashboard() {
+  hideElement(authPage);
 
-  editorPage.classList.add("hidden");
+  hideElement(editorPage);
 
-  notesDashboard.classList.remove("hidden");
-
-  updateUserInformation(user);
-
-  loadUserTheme(user);
-
-  resetNotesState();
-
-  loadNotes();
+  showElement(notesDashboard);
 }
 
-function showEditorPage() {
-  notesDashboard.classList.add("hidden");
+function showEditor() {
+  hideElement(authPage);
 
-  editorPage.classList.remove("hidden");
+  hideElement(notesDashboard);
+
+  showElement(editorPage);
 }
 
-/* ============================================================
-   AUTH FORMS
-   ============================================================ */
+function hideElement(element) {
+  if (!element) {
+    return;
+  }
+
+  element.classList.add("hidden");
+}
+
+function showElement(element) {
+  if (!element) {
+    return;
+  }
+
+  element.classList.remove("hidden");
+}
+
+// ============================================================
+// AUTH FORM TABS
+// ============================================================
 
 function showLoginForm() {
-  loginTab.classList.add("active");
+  loginTab?.classList.add("active");
 
-  signupTab.classList.remove("active");
+  signupTab?.classList.remove("active");
 
-  loginForm.classList.remove("hidden");
+  loginForm?.classList.remove("hidden");
 
-  signupForm.classList.add("hidden");
+  signupForm?.classList.add("hidden");
 }
 
 function showSignupForm() {
-  signupTab.classList.add("active");
+  signupTab?.classList.add("active");
 
-  loginTab.classList.remove("active");
+  loginTab?.classList.remove("active");
 
-  signupForm.classList.remove("hidden");
+  signupForm?.classList.remove("hidden");
 
-  loginForm.classList.add("hidden");
+  loginForm?.classList.add("hidden");
 }
 
-/* ============================================================
-   USER INFORMATION
-   ============================================================ */
+// ============================================================
+// USER INTERFACE
+// ============================================================
 
-function updateUserInformation(user) {
+function updateUserInterface(user) {
   if (!user) {
     return;
   }
 
-  const name = user.name || "User";
+  if (userName) {
+    userName.textContent = user.name;
+  }
 
-  userName.textContent = name;
+  if (userEmail) {
+    userEmail.textContent = user.email;
+  }
 
-  userEmail.textContent = user.email || "";
+  if (welcomeUserName) {
+    welcomeUserName.textContent = user.name;
+  }
 
-  userAvatar.textContent = getInitial(name);
-
-  welcomeUserName.textContent = name;
+  if (userAvatar) {
+    userAvatar.textContent = getInitials(user.name);
+  }
 }
 
-function getInitial(name) {
+function getInitials(name) {
   if (!name) {
     return "U";
   }
 
-  return name.trim().charAt(0).toUpperCase();
+  const parts = name.trim().split(/\s+/);
+
+  if (parts.length === 1) {
+    return parts[0].charAt(0).toUpperCase();
+  }
+
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
-/* ============================================================
-   THEME SYSTEM
-   ============================================================ */
+// ============================================================
+// API REQUEST HELPER
+// ============================================================
+
+async function apiRequest(url, options = {}) {
+  const token = getToken();
+
+  const headers = {
+    ...(options.headers || {}),
+
+    "Content-Type": "application/json",
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  if (response.status === 401) {
+    clearAuthentication();
+
+    showAuthPage();
+
+    showToast("Your session has expired. Please login again.", "error");
+
+    throw new Error("Unauthorized");
+  }
+
+  return response;
+}
+
+// ============================================================
+// RESPONSE PARSER
+// ============================================================
+
+async function parseResponse(response) {
+  const text = await response.text();
+
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {
+      message: text,
+    };
+  }
+}
+
+// ============================================================
+// LOAD NOTES
+// ============================================================
+
+async function loadNotes() {
+  try {
+    const response = await apiRequest(NOTES_API, {
+      method: "GET",
+    });
+
+    const data = await parseResponse(response);
+
+    if (!response.ok) {
+      throw new Error(data.message || "Unable to load notes");
+    }
+
+    if (Array.isArray(data)) {
+      notes = data;
+    } else if (Array.isArray(data.notes)) {
+      notes = data.notes;
+    } else if (Array.isArray(data.content)) {
+      notes = data.content;
+    } else {
+      notes = [];
+    }
+
+    currentPage = 1;
+
+    renderNotes();
+  } catch (error) {
+    console.error("Load notes error:", error);
+
+    if (error.message !== "Unauthorized") {
+      showToast(error.message || "Unable to load notes", "error");
+    }
+  }
+}
+
+// ============================================================
+// NEW NOTE
+// ============================================================
+
+function openNewNoteEditor() {
+  editingNoteId = null;
+
+  clearEditor();
+
+  showEditor();
+
+  if (noteTitle) {
+    noteTitle.focus();
+  }
+}
+
+// ============================================================
+// EDIT NOTE
+// ============================================================
+
+function openEditNote(note) {
+  editingNoteId = note.id || note._id;
+
+  if (noteTitle) {
+    noteTitle.value = note.title || "";
+  }
+
+  if (noteCategory) {
+    noteCategory.value = note.category || "";
+  }
+
+  if (noteTags) {
+    noteTags.value = Array.isArray(note.tags)
+      ? note.tags.join(", ")
+      : note.tags || "";
+  }
+
+  if (noteContent) {
+    noteContent.innerHTML = note.content || "";
+  }
+
+  showEditor();
+
+  if (noteTitle) {
+    noteTitle.focus();
+  }
+}
+
+// ============================================================
+// CLEAR EDITOR
+// ============================================================
+
+function clearEditor() {
+  if (noteTitle) {
+    noteTitle.value = "";
+  }
+
+  if (noteCategory) {
+    noteCategory.value = "";
+  }
+
+  if (noteTags) {
+    noteTags.value = "";
+  }
+
+  if (noteContent) {
+    noteContent.innerHTML = "";
+  }
+}
+
+// ============================================================
+// SAVE / UPDATE NOTE
+// ============================================================
+
+async function handleNoteSubmit(event) {
+  event.preventDefault();
+
+  const title = noteTitle?.value.trim() || "";
+
+  const category = noteCategory?.value.trim() || "";
+
+  const content = noteContent?.innerHTML.trim() || "";
+
+  const tags = parseTags(noteTags?.value || "");
+
+  if (!title) {
+    showToast("Please enter a note title", "error");
+
+    return;
+  }
+
+  if (!content) {
+    showToast("Please enter some note content", "error");
+
+    return;
+  }
+
+  const isEditing = Boolean(editingNoteId);
+
+  const payload = {
+    title,
+
+    category,
+
+    tags,
+
+    content,
+  };
+
+  try {
+    setButtonLoading(saveNoteButton, true);
+
+    let response;
+
+    if (isEditing) {
+      response = await apiRequest(`${NOTES_API}/${editingNoteId}`, {
+        method: "PUT",
+
+        body: JSON.stringify(payload),
+      });
+    } else {
+      response = await apiRequest(NOTES_API, {
+        method: "POST",
+
+        body: JSON.stringify(payload),
+      });
+    }
+
+    const data = await parseResponse(response);
+
+    if (!response.ok) {
+      throw new Error(data.message || "Unable to save note");
+    }
+
+    showToast(
+      isEditing ? "Note updated successfully" : "Note created successfully",
+      "success",
+    );
+
+    editingNoteId = null;
+
+    showDashboard();
+
+    await loadNotes();
+  } catch (error) {
+    console.error("Save note error:", error);
+
+    if (error.message !== "Unauthorized") {
+      showToast(error.message || "Unable to save note", "error");
+    }
+  } finally {
+    setButtonLoading(saveNoteButton, false);
+  }
+}
+
+// ============================================================
+// DELETE NOTE
+// ============================================================
+
+function openDeleteModal(noteId) {
+  noteIdToDelete = noteId;
+
+  if (deleteNoteModal) {
+    deleteNoteModal.classList.remove("hidden");
+  }
+}
+
+function closeDeleteModal() {
+  noteIdToDelete = null;
+
+  if (deleteNoteModal) {
+    deleteNoteModal.classList.add("hidden");
+  }
+}
+
+async function confirmDelete() {
+  if (!noteIdToDelete) {
+    return;
+  }
+
+  try {
+    const response = await apiRequest(`${NOTES_API}/${noteIdToDelete}`, {
+      method: "DELETE",
+    });
+
+    const data = await parseResponse(response);
+
+    if (!response.ok) {
+      throw new Error(data.message || "Unable to delete note");
+    }
+
+    closeDeleteModal();
+
+    showToast("Note deleted successfully", "success");
+
+    await loadNotes();
+  } catch (error) {
+    console.error("Delete note error:", error);
+
+    if (error.message !== "Unauthorized") {
+      showToast(error.message || "Unable to delete note", "error");
+    }
+  }
+}
+
+// ============================================================
+// NOTE ACTIONS
+// ============================================================
+
+async function toggleNoteProperty(note, property, value) {
+  const noteId = note.id || note._id;
+
+  try {
+    const payload = {
+      title: note.title || "",
+
+      category: note.category || "",
+
+      tags: Array.isArray(note.tags) ? note.tags : [],
+
+      content: note.content || "",
+
+      [property]: value,
+    };
+
+    const response = await apiRequest(`${NOTES_API}/${noteId}`, {
+      method: "PUT",
+
+      body: JSON.stringify(payload),
+    });
+
+    const data = await parseResponse(response);
+
+    if (!response.ok) {
+      throw new Error(data.message || "Unable to update note");
+    }
+
+    await loadNotes();
+  } catch (error) {
+    console.error("Update note error:", error);
+
+    showToast(error.message || "Unable to update note", "error");
+  }
+}
+
+// ============================================================
+// RENDER NOTES
+// ============================================================
+
+function renderNotes() {
+  if (!notesGrid) {
+    return;
+  }
+
+  let filteredNotes = [...notes];
+
+  // -------------------------------
+  // SEARCH
+  // -------------------------------
+
+  const searchTerm = searchInput?.value.trim().toLowerCase() || "";
+
+  if (searchTerm) {
+    filteredNotes = filteredNotes.filter((note) => {
+      const title = note.title || "";
+
+      const content = stripHtml(note.content || "");
+
+      const category = note.category || "";
+
+      const tags = Array.isArray(note.tags)
+        ? note.tags.join(" ")
+        : note.tags || "";
+
+      return (
+        title.toLowerCase().includes(searchTerm) ||
+        content.toLowerCase().includes(searchTerm) ||
+        category.toLowerCase().includes(searchTerm) ||
+        tags.toLowerCase().includes(searchTerm)
+      );
+    });
+  }
+
+  // -------------------------------
+  // FILTER
+  // -------------------------------
+
+  if (currentFilter === "pinned") {
+    filteredNotes = filteredNotes.filter((note) => note.pinned === true);
+  }
+
+  if (currentFilter === "favorite") {
+    filteredNotes = filteredNotes.filter((note) => note.favorite === true);
+  }
+
+  if (currentFilter === "archived") {
+    filteredNotes = filteredNotes.filter((note) => note.archived === true);
+  }
+
+  if (currentFilter === "active") {
+    filteredNotes = filteredNotes.filter((note) => note.archived !== true);
+  }
+
+  // -------------------------------
+  // SORT
+  // -------------------------------
+
+  filteredNotes = sortNotes(filteredNotes);
+
+  // -------------------------------
+  // PAGINATION
+  // -------------------------------
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredNotes.length / NOTES_PER_PAGE),
+  );
+
+  if (currentPage > totalPages) {
+    currentPage = totalPages;
+  }
+
+  const startIndex = (currentPage - 1) * NOTES_PER_PAGE;
+
+  const pageNotes = filteredNotes.slice(
+    startIndex,
+    startIndex + NOTES_PER_PAGE,
+  );
+
+  notesGrid.innerHTML = "";
+
+  if (pageNotes.length === 0) {
+    notesGrid.innerHTML = `
+
+            <div class="empty-state">
+
+                <div class="empty-state-icon">
+                    📝
+                </div>
+
+                <h3>No notes found</h3>
+
+                <p>
+                    Create a new note or
+                    change your search/filter.
+                </p>
+
+            </div>
+
+        `;
+  } else {
+    pageNotes.forEach((note) => {
+      notesGrid.appendChild(createNoteCard(note));
+    });
+  }
+
+  renderPagination(totalPages);
+}
+
+// ============================================================
+// SORT NOTES
+// ============================================================
+
+function sortNotes(noteList) {
+  return noteList.sort((a, b) => {
+    const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+
+    const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+
+    if (currentSort === "oldest") {
+      return dateA - dateB;
+    }
+
+    if (currentSort === "title") {
+      return (a.title || "").localeCompare(b.title || "");
+    }
+
+    if (currentSort === "pinned") {
+      return Number(b.pinned === true) - Number(a.pinned === true);
+    }
+
+    return dateB - dateA;
+  });
+}
+
+// ============================================================
+// NOTE CARD
+// ============================================================
+
+function createNoteCard(note) {
+  const card = document.createElement("article");
+
+  card.className = "note-card";
+
+  if (note.pinned) {
+    card.classList.add("is-pinned");
+  }
+
+  const noteId = note.id || note._id;
+
+  const title = escapeHtml(note.title || "Untitled");
+
+  const category = escapeHtml(note.category || "");
+
+  const content = sanitizePreview(note.content || "");
+
+  const date = formatDate(note.updatedAt || note.createdAt);
+
+  const tags = Array.isArray(note.tags) ? note.tags : [];
+
+  const tagsHtml = tags.length
+    ? `
+                <div class="note-tags">
+                    ${tags
+                      .map(
+                        (tag) =>
+                          `<span class="tag">
+                                    ${escapeHtml(tag)}
+                                </span>`,
+                      )
+                      .join("")}
+                </div>
+            `
+    : "";
+
+  card.innerHTML = `
+
+        <div class="note-card-header">
+
+            <div class="note-card-title-wrap">
+
+                ${
+                  note.pinned
+                    ? `
+                            <span
+                                class="note-pin"
+                                title="Pinned"
+                            >
+                                📌
+                            </span>
+                        `
+                    : ""
+                }
+
+                <h3>
+                    ${title}
+                </h3>
+
+            </div>
+
+            <div class="note-actions">
+
+                <button
+                    class="icon-button"
+                    data-action="pin"
+                    title="Pin"
+                >
+                    ${note.pinned ? "📌" : "📍"}
+                </button>
+
+                <button
+                    class="icon-button"
+                    data-action="favorite"
+                    title="Favorite"
+                >
+                    ${note.favorite ? "★" : "☆"}
+                </button>
+
+                <button
+                    class="icon-button"
+                    data-action="archive"
+                    title="Archive"
+                >
+                    ${note.archived ? "📦" : "🗃️"}
+                </button>
+
+                <button
+                    class="icon-button"
+                    data-action="delete"
+                    title="Delete"
+                >
+                    🗑️
+                </button>
+
+            </div>
+
+        </div>
+
+
+        ${
+          category
+            ? `
+                    <div class="note-category">
+                        ${category}
+                    </div>
+                `
+            : ""
+        }
+
+
+        <div class="note-preview">
+
+            ${content}
+
+        </div>
+
+
+        ${tagsHtml}
+
+
+        <div class="note-card-footer">
+
+            <span>
+                ${date}
+            </span>
+
+            <button
+                class="note-edit-button"
+                data-action="edit"
+            >
+                Open
+            </button>
+
+        </div>
+
+    `;
+
+  card.addEventListener("click", (event) => {
+    const actionButton = event.target.closest("[data-action]");
+
+    if (!actionButton) {
+      return;
+    }
+
+    event.stopPropagation();
+
+    const action = actionButton.dataset.action;
+
+    if (action === "edit") {
+      openEditNote(note);
+
+      return;
+    }
+
+    if (action === "delete") {
+      openDeleteModal(noteId);
+
+      return;
+    }
+
+    if (action === "pin") {
+      toggleNoteProperty(note, "pinned", !note.pinned);
+
+      return;
+    }
+
+    if (action === "favorite") {
+      toggleNoteProperty(note, "favorite", !note.favorite);
+
+      return;
+    }
+
+    if (action === "archive") {
+      toggleNoteProperty(note, "archived", !note.archived);
+    }
+  });
+
+  card.addEventListener("dblclick", () => {
+    openEditNote(note);
+  });
+
+  return card;
+}
+
+// ============================================================
+// PAGINATION
+// ============================================================
+
+function renderPagination(totalPages) {
+  if (!pagination) {
+    return;
+  }
+
+  pagination.innerHTML = "";
+
+  if (totalPages <= 1) {
+    return;
+  }
+
+  const previousButton = document.createElement("button");
+
+  previousButton.textContent = "Previous";
+
+  previousButton.disabled = currentPage === 1;
+
+  previousButton.addEventListener("click", () => {
+    if (currentPage > 1) {
+      currentPage--;
+
+      renderNotes();
+    }
+  });
+
+  pagination.appendChild(previousButton);
+
+  for (let page = 1; page <= totalPages; page++) {
+    const button = document.createElement("button");
+
+    button.textContent = page;
+
+    if (page === currentPage) {
+      button.classList.add("active");
+    }
+
+    button.addEventListener("click", () => {
+      currentPage = page;
+
+      renderNotes();
+    });
+
+    pagination.appendChild(button);
+  }
+
+  const nextButton = document.createElement("button");
+
+  nextButton.textContent = "Next";
+
+  nextButton.disabled = currentPage === totalPages;
+
+  nextButton.addEventListener("click", () => {
+    if (currentPage < totalPages) {
+      currentPage++;
+
+      renderNotes();
+    }
+  });
+
+  pagination.appendChild(nextButton);
+}
+
+// ============================================================
+// FILTER
+// ============================================================
+
+function toggleFilter() {
+  const filters = ["all", "active", "pinned", "favorite", "archived"];
+
+  const currentIndex = filters.indexOf(currentFilter);
+
+  currentFilter = filters[(currentIndex + 1) % filters.length];
+
+  currentPage = 1;
+
+  renderNotes();
+}
+
+// ============================================================
+// THEMES
+// ============================================================
 
 function getThemeStorageKey(user) {
   if (!user || !user.userId) {
@@ -541,11 +1384,8 @@ function applyTheme(theme, user) {
 
   document.body.classList.remove(
     "theme-violet",
-
     "theme-ocean",
-
     "theme-emerald",
-
     "theme-sunset",
   );
 
@@ -572,903 +1412,160 @@ function loadUserTheme(user) {
 
 function updateThemeSelection(selectedTheme) {
   themeOptions.forEach((option) => {
-    const theme = option.dataset.theme;
+    const check = option.querySelector(".theme-check");
 
-    option.classList.toggle(
-      "selected",
+    if (option.dataset.theme === selectedTheme) {
+      option.classList.add("active");
 
-      theme === selectedTheme,
-    );
-  });
-}
-
-function setupThemeEvents() {
-  if (!themeButton) {
-    return;
-  }
-
-  themeButton.addEventListener("click", (event) => {
-    event.stopPropagation();
-
-    themeMenu.classList.toggle("hidden");
-  });
-
-  themeOptions.forEach((option) => {
-    option.addEventListener("click", (event) => {
-      const theme = event.currentTarget.dataset.theme;
-
-      const user = getStoredUser();
-
-      applyTheme(theme, user);
-
-      themeMenu.classList.add("hidden");
-
-      showToast(`${capitalize(theme)} theme applied`, "success");
-    });
-  });
-
-  document.addEventListener("click", (event) => {
-    if (!event.target.closest(".theme-selector")) {
-      themeMenu.classList.add("hidden");
-    }
-  });
-}
-
-function capitalize(value) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-/* ============================================================
-   DASHBOARD EVENTS
-   ============================================================ */
-
-function setupDashboardEvents() {
-  newNoteBtn.addEventListener("click", openCreateEditor);
-
-  emptyCreateBtn.addEventListener("click", openCreateEditor);
-
-  searchInput.addEventListener("input", handleSearch);
-
-  filterSelect.addEventListener("change", () => {
-    currentFilter = filterSelect.value;
-
-    currentPage = 0;
-
-    loadNotes();
-  });
-
-  sortSelect.addEventListener("change", () => {
-    const [sortBy, direction] = sortSelect.value.split("-");
-
-    currentSortBy = sortBy;
-
-    currentDirection = direction;
-
-    currentPage = 0;
-
-    loadNotes();
-  });
-
-  previousPageBtn.addEventListener("click", () => {
-    if (currentPage > 0) {
-      currentPage--;
-
-      loadNotes();
-    }
-  });
-
-  nextPageBtn.addEventListener("click", () => {
-    if (currentPage < totalPages - 1) {
-      currentPage++;
-
-      loadNotes();
-    }
-  });
-}
-
-/* ============================================================
-   LOAD NOTES
-   ============================================================ */
-
-async function loadNotes() {
-  try {
-    let url;
-
-    const params = new URLSearchParams();
-
-    params.set("page", currentPage);
-
-    params.set("size", currentSize);
-
-    params.set("sortBy", currentSortBy);
-
-    params.set("direction", currentDirection);
-
-    if (currentKeyword) {
-      params.set("keyword", currentKeyword);
-
-      url = `${NOTES_API}/search?${params.toString()}`;
-    } else if (currentFilter === "pinned") {
-      url = `${NOTES_API}/pinned?${params.toString()}`;
-    } else if (currentFilter === "favorite") {
-      url = `${NOTES_API}/favorites?${params.toString()}`;
+      if (check) {
+        check.textContent = "✓";
+      }
     } else {
-      url = `${NOTES_API}?${params.toString()}`;
+      option.classList.remove("active");
+
+      if (check) {
+        check.textContent = "";
+      }
     }
-
-    const response = await apiFetch(url);
-
-    if (!response.ok) {
-      const data = await parseResponse(response);
-
-      throw new Error(getErrorMessage(data));
-    }
-
-    const data = await response.json();
-
-    renderNotes(data.content || []);
-
-    totalPages = data.totalPages || 0;
-
-    updatePagination(data);
-  } catch (error) {
-    if (error.message === "Authentication required") {
-      return;
-    }
-
-    console.error("Failed to load notes:", error);
-
-    showToast("Failed to load notes", "error");
-  }
+  });
 }
 
-/* ============================================================
-   RENDER NOTES
-   ============================================================ */
-
-function renderNotes(notes) {
-  notesContainer.innerHTML = "";
-
-  if (!notes.length) {
-    notesContainer.classList.add("hidden");
-
-    emptyState.classList.remove("hidden");
-
-    if (currentKeyword) {
-      emptyTitle.textContent = "No matching notes";
-
-      emptyDescription.textContent = "Try another search keyword.";
-    } else if (currentFilter !== "all") {
-      emptyTitle.textContent = "Nothing here yet";
-
-      emptyDescription.textContent = "No notes match this filter.";
-    } else {
-      emptyTitle.textContent = "No notes yet";
-
-      emptyDescription.textContent = "Create your first note to get started.";
-    }
-
-    pagination.classList.add("hidden");
-
+function toggleThemeMenu() {
+  if (!themeMenu) {
     return;
   }
 
-  notesContainer.classList.remove("hidden");
-
-  emptyState.classList.add("hidden");
-
-  pagination.classList.remove("hidden");
-
-  notes.forEach((note) => {
-    notesContainer.appendChild(createNoteCard(note));
-  });
+  themeMenu.classList.toggle("hidden");
 }
 
-/* ============================================================
-   CREATE NOTE CARD
-   ============================================================ */
-
-function createNoteCard(note) {
-  const card = document.createElement("article");
-
-  card.className = "note-card glass-card";
-
-  const preview = sanitizePreview(note.content);
-
-  const tags = Array.isArray(note.tags) ? note.tags : [];
-
-  card.innerHTML = `
-
-        <div class="note-card-top">
-
-            <div class="note-card-icons">
-
-                ${note.pinned ? `<span title="Pinned">📌</span>` : ""}
-
-                ${note.favorite ? `<span title="Favorite">★</span>` : ""}
-
-                ${note.archived ? `<span title="Archived">Archive</span>` : ""}
-
-            </div>
-
-
-            <div class="note-card-menu">
-
-                <button
-                        class="icon-button"
-                        data-action="edit"
-                        title="Edit"
-                        type="button"
-                >
-                    ⋮
-                </button>
-
-            </div>
-
-        </div>
-
-
-        <div
-                class="note-card-body"
-                data-action="edit"
-        >
-
-            <h3>
-                ${escapeHtml(note.title || "Untitled Note")}
-            </h3>
-
-            <div class="note-preview">
-                ${preview}
-            </div>
-
-        </div>
-
-
-        <div class="note-card-footer">
-
-            <div class="note-tags">
-
-                ${
-                  note.category
-                    ? `
-                            <span class="category-badge">
-                                ${escapeHtml(note.category)}
-                            </span>
-                          `
-                    : ""
-                }
-
-
-                ${tags
-                  .slice(0, 3)
-                  .map(
-                    (tag) =>
-                      `
-                                <span class="tag-badge">
-                                    #${escapeHtml(tag)}
-                                </span>
-                                `,
-                  )
-                  .join("")}
-
-            </div>
-
-
-            <span class="note-date">
-                ${formatDate(note.updatedAt || note.createdAt)}
-            </span>
-
-        </div>
-    `;
-
-  card.querySelectorAll('[data-action="edit"]').forEach((element) => {
-    element.addEventListener("click", (event) => {
-      event.stopPropagation();
-
-      openEditEditor(note.id);
-    });
-  });
-
-  return card;
-}
-
-/* ============================================================
-   CREATE NOTE
-   ============================================================ */
-
-function openCreateEditor() {
-  editingNoteId = null;
-
-  clearEditor();
-
-  editorModeLabel.textContent = "New Note";
-
-  saveStatus.textContent = "Unsaved";
-
-  editorDeleteBtn.classList.add("hidden");
-
-  noteMetadata.classList.add("hidden");
-
-  showEditorPage();
-
-  noteTitle.focus();
-}
-
-/* ============================================================
-   OPEN EDITOR
-   ============================================================ */
-
-async function openEditEditor(id) {
-  try {
-    const response = await apiFetch(`${NOTES_API}/${id}`);
-
-    if (!response.ok) {
-      const data = await parseResponse(response);
-
-      throw new Error(getErrorMessage(data));
-    }
-
-    const note = await response.json();
-
-    editingNoteId = note.id;
-
-    noteTitle.value = note.title || "";
-
-    noteContent.innerHTML = note.content || "";
-
-    noteCategory.value = note.category || "";
-
-    noteTags.value = Array.isArray(note.tags) ? note.tags.join(", ") : "";
-
-    notePinned.checked = Boolean(note.pinned);
-
-    noteFavorite.checked = Boolean(note.favorite);
-
-    noteArchived.checked = Boolean(note.archived);
-
-    editorModeLabel.textContent = "Edit Note";
-
-    saveStatus.textContent = "Saved";
-
-    editorDeleteBtn.classList.remove("hidden");
-
-    noteMetadata.classList.remove("hidden");
-
-    createdAt.textContent = formatDateTime(note.createdAt);
-
-    updatedAt.textContent = formatDateTime(note.updatedAt);
-
-    showEditorPage();
-
-    noteTitle.focus();
-  } catch (error) {
-    if (error.message === "Authentication required") {
-      return;
-    }
-
-    showToast(error.message || "Failed to open note", "error");
+function closeThemeMenu() {
+  if (themeMenu) {
+    themeMenu.classList.add("hidden");
   }
 }
 
-/* ============================================================
-   EDITOR EVENTS
-   ============================================================ */
+// ============================================================
+// TAGS
+// ============================================================
 
-function setupEditorEvents() {
-  backToNotesBtn.addEventListener("click", closeEditorPage);
-
-  editorSaveBtn.addEventListener("click", handleNoteSubmit);
-
-  editorDeleteBtn.addEventListener("click", () => {
-    if (editingNoteId) {
-      openDeleteModal(editingNoteId);
-    }
-  });
-
-  noteTitle.addEventListener("input", markEditorUnsaved);
-
-  noteContent.addEventListener("input", markEditorUnsaved);
-
-  noteCategory.addEventListener("input", markEditorUnsaved);
-
-  noteTags.addEventListener("input", markEditorUnsaved);
-
-  notePinned.addEventListener("change", markEditorUnsaved);
-
-  noteFavorite.addEventListener("change", markEditorUnsaved);
-
-  noteArchived.addEventListener("change", markEditorUnsaved);
-
-  document.addEventListener("keydown", (event) => {
-    if (
-      event.ctrlKey &&
-      event.key === "Enter" &&
-      !editorPage.classList.contains("hidden")
-    ) {
-      event.preventDefault();
-
-      handleNoteSubmit();
-    }
-  });
-}
-
-/* ============================================================
-   SAVE NOTE
-   ============================================================ */
-
-async function handleNoteSubmit() {
-  const title = noteTitle.value.trim();
-
-  const content = noteContent.innerHTML.trim();
-
-  if (!title) {
-    showToast("Title is required", "error");
-
-    noteTitle.focus();
-
-    return;
-  }
-
-  if (!content) {
-    showToast("Content is required", "error");
-
-    noteContent.focus();
-
-    return;
-  }
-
-  const isEditing = Boolean(editingNoteId);
-
-  const tags = noteTags.value
+function parseTags(value) {
+  return value
     .split(",")
     .map((tag) => tag.trim())
-    .filter((tag) => tag.length > 0);
+    .filter(Boolean);
+}
 
-  const noteData = {
-    title,
+// ============================================================
+// DATE FORMAT
+// ============================================================
 
-    content,
-
-    category: noteCategory.value.trim(),
-
-    tags,
-
-    pinned: notePinned.checked,
-
-    favorite: noteFavorite.checked,
-
-    archived: noteArchived.checked,
-  };
-
-  try {
-    editorSaveBtn.disabled = true;
-
-    saveStatus.textContent = "Saving...";
-
-    const url = isEditing ? `${NOTES_API}/${editingNoteId}` : NOTES_API;
-
-    const method = isEditing ? "PUT" : "POST";
-
-    const response = await apiFetch(url, {
-      method,
-
-      headers: {
-        "Content-Type": "application/json",
-      },
-
-      body: JSON.stringify(noteData),
-    });
-
-    if (!response.ok) {
-      const data = await parseResponse(response);
-
-      throw new Error(getErrorMessage(data));
-    }
-
-    const savedNote = await response.json();
-
-    editingNoteId = savedNote.id;
-
-    editorModeLabel.textContent = "Edit Note";
-
-    saveStatus.textContent = "Saved";
-
-    editorDeleteBtn.classList.remove("hidden");
-
-    noteMetadata.classList.remove("hidden");
-
-    createdAt.textContent = formatDateTime(savedNote.createdAt);
-
-    updatedAt.textContent = formatDateTime(savedNote.updatedAt);
-
-    showToast(
-      isEditing ? "Note updated successfully" : "Note created successfully",
-      "success",
-    );
-
-    await loadNotes();
-  } catch (error) {
-    if (error.message === "Authentication required") {
-      return;
-    }
-
-    saveStatus.textContent = "Save failed";
-
-    showToast(error.message || "Failed to save note", "error");
-  } finally {
-    editorSaveBtn.disabled = false;
+function formatDate(dateValue) {
+  if (!dateValue) {
+    return "";
   }
-}
 
-/* ============================================================
-   CLOSE EDITOR
-   ============================================================ */
+  const date = new Date(dateValue);
 
-function closeEditorPage() {
-  editorPage.classList.add("hidden");
-
-  notesDashboard.classList.remove("hidden");
-
-  clearEditor();
-
-  editingNoteId = null;
-
-  loadNotes();
-}
-
-/* ============================================================
-   CLEAR EDITOR
-   ============================================================ */
-
-function clearEditor() {
-  noteTitle.value = "";
-
-  noteContent.innerHTML = "";
-
-  noteCategory.value = "";
-
-  noteTags.value = "";
-
-  notePinned.checked = false;
-
-  noteFavorite.checked = false;
-
-  noteArchived.checked = false;
-
-  createdAt.textContent = "-";
-
-  updatedAt.textContent = "-";
-
-  fontSizeSelect.value = "3";
-
-  saveStatus.textContent = "Unsaved";
-
-  editorModeLabel.textContent = "New Note";
-
-  noteMetadata.classList.add("hidden");
-
-  editorDeleteBtn.classList.add("hidden");
-}
-
-/* ============================================================
-   SEARCH
-   ============================================================ */
-
-function handleSearch() {
-  clearTimeout(searchTimeout);
-
-  searchTimeout = setTimeout(() => {
-    currentKeyword = searchInput.value.trim();
-
-    currentPage = 0;
-
-    loadNotes();
-  }, 350);
-}
-
-/* ============================================================
-   PAGINATION
-   ============================================================ */
-
-function updatePagination(data) {
-  const current = (data.number || 0) + 1;
-
-  const total = data.totalPages || 0;
-
-  pageInfo.textContent = total > 0 ? `Page ${current} of ${total}` : "Page 1";
-
-  previousPageBtn.disabled = currentPage <= 0;
-
-  nextPageBtn.disabled = currentPage >= total - 1;
-
-  if (total <= 1) {
-    pagination.classList.add("hidden");
-  } else {
-    pagination.classList.remove("hidden");
+  if (Number.isNaN(date.getTime())) {
+    return "";
   }
-}
 
-/* ============================================================
-   FORMATTING
-   ============================================================ */
-
-function setupFormattingEvents() {
-  document
-    .querySelectorAll(".editor-toolbar [data-command]")
-    .forEach((button) => {
-      button.addEventListener("click", () => {
-        const command = button.dataset.command;
-
-        document.execCommand(command, false, null);
-
-        noteContent.focus();
-
-        markEditorUnsaved();
-      });
-    });
-
-  fontSizeSelect.addEventListener("change", () => {
-    document.execCommand("fontSize", false, fontSizeSelect.value);
-
-    noteContent.focus();
-
-    markEditorUnsaved();
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
   });
 }
 
-/* ============================================================
-   UNSAVED STATE
-   ============================================================ */
+// ============================================================
+// HTML / SECURITY HELPERS
+// ============================================================
 
-function markEditorUnsaved() {
-  if (!editorPage.classList.contains("hidden")) {
-    saveStatus.textContent = "Unsaved changes";
-  }
+function stripHtml(html) {
+  const temporaryElement = document.createElement("div");
+
+  temporaryElement.innerHTML = html;
+
+  return temporaryElement.textContent || temporaryElement.innerText || "";
 }
 
-/* ============================================================
-   DELETE NOTE
-   ============================================================ */
+function sanitizePreview(html) {
+  const text = stripHtml(html);
 
-function openDeleteModal(id) {
-  deletingNoteId = id;
+  const escaped = escapeHtml(text);
 
-  deleteModal.classList.remove("hidden");
-}
-
-function closeDeleteModal() {
-  deletingNoteId = null;
-
-  deleteModal.classList.add("hidden");
-}
-
-cancelDeleteBtn.addEventListener("click", closeDeleteModal);
-
-confirmDeleteBtn.addEventListener("click", handleDelete);
-
-async function handleDelete() {
-  if (!deletingNoteId) {
-    return;
+  if (escaped.length <= 180) {
+    return escaped;
   }
 
-  try {
-    confirmDeleteBtn.disabled = true;
-
-    const response = await apiFetch(`${NOTES_API}/${deletingNoteId}`, {
-      method: "DELETE",
-    });
-
-    if (!response.ok) {
-      const data = await parseResponse(response);
-
-      throw new Error(getErrorMessage(data));
-    }
-
-    const deletedFromEditor = editingNoteId === deletingNoteId;
-
-    closeDeleteModal();
-
-    if (deletedFromEditor) {
-      closeEditorPage();
-    } else {
-      await loadNotes();
-    }
-
-    showToast("Note deleted successfully", "success");
-  } catch (error) {
-    if (error.message === "Authentication required") {
-      return;
-    }
-
-    showToast(error.message || "Failed to delete note", "error");
-  } finally {
-    confirmDeleteBtn.disabled = false;
-  }
+  return escaped.substring(0, 180) + "...";
 }
 
-/* ============================================================
-   RESET NOTES STATE
-   ============================================================ */
-
-function resetNotesState() {
-  currentPage = 0;
-
-  currentSize = 10;
-
-  currentSortBy = "createdAt";
-
-  currentDirection = "desc";
-
-  currentFilter = "all";
-
-  currentKeyword = "";
-
-  totalPages = 0;
-
-  searchInput.value = "";
-
-  filterSelect.value = "all";
-
-  sortSelect.value = "createdAt-desc";
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-function resetApplicationState() {
-  resetNotesState();
+// ============================================================
+// BUTTON LOADING
+// ============================================================
 
-  editingNoteId = null;
-
-  deletingNoteId = null;
-
-  clearEditor();
-
-  notesContainer.innerHTML = "";
-
-  emptyState.classList.add("hidden");
-}
-
-/* ============================================================
-   RESPONSE HELPERS
-   ============================================================ */
-
-async function parseResponse(response) {
-  const text = await response.text();
-
-  if (!text) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch (error) {
-    return {
-      message: text,
-    };
-  }
-}
-
-function getErrorMessage(data) {
-  if (data && data.errors) {
-    const errors = Object.values(data.errors);
-
-    if (errors.length) {
-      return errors[0];
-    }
-  }
-
-  return data?.message || "Something went wrong";
-}
-
-/* ============================================================
-   AUTH BUTTON LOADING
-   ============================================================ */
-
-function setAuthButtonLoading(form, loading) {
-  const button = form.querySelector(".auth-submit");
-
+function setButtonLoading(button, loading) {
   if (!button) {
     return;
   }
 
   if (loading) {
-    button.disabled = true;
-
     button.dataset.originalText = button.textContent;
+
+    button.disabled = true;
 
     button.textContent = "Please wait...";
   } else {
     button.disabled = false;
 
-    button.textContent = button.dataset.originalText || button.textContent;
+    if (button.dataset.originalText) {
+      button.textContent = button.dataset.originalText;
+    }
   }
 }
 
-/* ============================================================
-   HTML HELPERS
-   ============================================================ */
-
-function escapeHtml(value) {
-  const div = document.createElement("div");
-
-  div.textContent = value ?? "";
-
-  return div.innerHTML;
-}
-
-function sanitizePreview(html) {
-  if (!html) {
-    return "No content";
-  }
-
-  const temp = document.createElement("div");
-
-  temp.innerHTML = html;
-
-  temp.querySelectorAll("script, style").forEach((element) => element.remove());
-
-  const text = temp.textContent || temp.innerText || "";
-
-  const cleanText = text.trim();
-
-  if (!cleanText) {
-    return "No content";
-  }
-
-  return escapeHtml(
-    cleanText.length > 180 ? cleanText.substring(0, 180) + "..." : cleanText,
-  );
-}
-
-/* ============================================================
-   DATE HELPERS
-   ============================================================ */
-
-function formatDate(value) {
-  if (!value) {
-    return "";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(value) {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return date.toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
-
-/* ============================================================
-   TOAST
-   ============================================================ */
+// ============================================================
+// TOAST
+// ============================================================
 
 function showToast(message, type = "success") {
+  if (!toastContainer) {
+    alert(message);
+
+    return;
+  }
+
+  const toast = document.createElement("div");
+
+  toast.className = `toast toast-${type}`;
+
   toast.textContent = message;
 
-  toast.className = `toast ${type} show`;
+  toastContainer.appendChild(toast);
 
-  clearTimeout(toastTimeout);
+  setTimeout(() => {
+    toast.classList.add("show");
+  }, 10);
 
-  toastTimeout = setTimeout(() => {
+  setTimeout(() => {
     toast.classList.remove("show");
+
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
   }, 3000);
 }
+
+// ============================================================
+// END
+// ============================================================
